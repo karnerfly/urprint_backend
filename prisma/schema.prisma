@@ -41,6 +41,7 @@ model ShopOwner {
   updatedAt     DateTime @db.Timestamptz(3) @updatedAt  @map("updated_at")
 
   shop          Shop?
+  token         OwnerToken?
   phones        OwnerPhone[]
   otps          Otp[]
 
@@ -179,4 +180,17 @@ model District {
   state State @relation(fields: [stateId], references: [id], onDelete: Cascade)
 
   @@map("districts")
+}
+
+model OwnerToken {
+  id                    Int @id @default(autoincrement())            @map("id")
+  ownerId               String @unique                               @map("owner_id")
+  refreshToken          String?                                      @map("refresh_token")
+  refreshTokenExpireAt  DateTime? @db.Timestamptz(3)                 @map("refresh_token_expire_at")
+  createdAt             DateTime @db.Timestamptz(3) @default(now())  @map("created_at")
+  updatedAt             DateTime @db.Timestamptz(3) @updatedAt       @map("updated_at")
+
+  owner ShopOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@map("owner_tokens")
 }

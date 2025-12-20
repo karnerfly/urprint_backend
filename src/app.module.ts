@@ -4,9 +4,16 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { DatabaseExceptionFilter } from './common/filters/database_exception.filter';
 import { ShopModule } from './modules/shop/shop.module';
 import { ValidationPipe } from './common/pipes/validation.pipe';
+import { AuthModule } from './modules/auth/auth.module';
+import { MasterdataModule } from './modules/masterdata/masterdata.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ envFilePath: '.env' }), ShopModule],
+  imports: [
+    ConfigModule.forRoot(),
+    ShopModule,
+    AuthModule,
+    MasterdataModule,
+  ],
   providers: [
     {
       provide: APP_FILTER,

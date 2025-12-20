@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { VersioningType } from '@nestjs/common';
-import { Snowflake } from './common/utils/snowflake/snowflake.util';
+import cookieParser from 'cookie-parser';
+
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -23,6 +24,8 @@ async function bootstrap() {
     type: VersioningType.URI,
     prefix: 'v1',
   });
+
+  app.use(cookieParser());
 
   const config = new DocumentBuilder()
     .setTitle('Api Documentation')
