@@ -1,9 +1,182 @@
 generator client {
   provider = "prisma-client"
-  output   = "../src/database/generated"
+  output   = "../src/common/database/generated"
   moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum ColorMode {
+  COLORED
+  BLACK_AND_WHITE
+}
+
+enum SideMode {
+  SINGLE
+  BOTH
+}
+
+enum OtpPurpose {
+  TWO_FACTOR_AUTHENTICATION
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  FORGOT_PASSWORD
+}
+
+enum OtpMedium {
+  SMS
+  EMAIL
+}
+
+model ShopOwner {
+  id            String @id                              @map("id")
+  name          String                                  @map("name")
+  email         String @unique                          @map("email")
+  passwordHash  String                                  @map("password_hash")
+  passwordSalt  String @unique                          @map("password_salt")
+  verified      Boolean @default(false)                 @map("verified")
+  otpRequired   Boolean @default(true)                  @map("otp_required")
+  updatedAt     DateTime @db.Timestamptz(3) @updatedAt  @map("updated_at")
+
+  shop          Shop?
+  phones        OwnerPhone[]
+  otps          Otp[]
+
+  @@map("shop_owners")
+}
+
+model OwnerPhone {
+  id        Int @id @default(autoincrement())   @map("id")
+  ownerId   String                              @map("owner_id")
+  phone     String                              @map("phone")
+
+  owner     ShopOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, phone])
+
+  @@map("owner_phones")
+}
+
+model Shop {
+  id            String @id                                    @map("id")
+  shopName      String                                        @map("shop_name")
+  ownerId       String @unique                                @map("owner_id")
+  locationId    Int? @unique                                  @map("location_id")
+  uploadToken   String @unique                                @map("upload_token")
+  createdAt     DateTime @db.Timestamptz(3) @default(now())   @map("created_at")
+  updatedAt     DateTime @db.Timestamptz(3) @updatedAt        @map("updated_at")
+
+  owner         ShopOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  location      ShopLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  uploads       Upload[]
+
+  @@map("shops")
+}
+
+model ShopLocation {
+  id          Int @id @default(autoincrement())             @map("id")
+  street      String?                                       @map("street")
+  city        String?                                       @map("city")
+  district    String?                                       @map("district")
+  state       String?                                       @map("state")
+  pin         String?                                       @map("pin")
+  createdAt   DateTime @db.Timestamptz(3) @default(now())   @map("created_at")
+  updatedAt   DateTime @db.Timestamptz(3) @updatedAt        @map("updated_at")
+
+  shop Shop?
+
+  @@map("shop_locations")
+}
+
+model Upload {
+  id              String @id                                   @map("id")
+  code            String @unique                               @map("code")
+  shopId          String                                       @map("shop_id")
+  customerToken   String @unique                               @map("customer_token")
+  documentCount   Int                                          @map("document_count")
+  deleted         Boolean @default(false)                      @map("deleted")
+  expireAt        DateTime @db.Timestamptz(3)                  @map("expire_at")
+  createdAt       DateTime @db.Timestamptz(3) @default(now())  @map("created_at")
+  updatedAt       DateTime @db.Timestamptz(3) @updatedAt       @map("updated_at")
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@map("uploads")
+}
+
+model Document {
+  id            String @id                                   @map("id")
+  uploadId      String                                       @map("upload_id")
+  name          String                                       @map("name")
+  mediaType     String                                       @map("media_type")
+  downloadable  Boolean @default(false)                      @map("downloadable")
+  noOfCopies    Int                                          @map("no_of_copies")
+  colorMode     ColorMode                                    @map("color_mode")
+  sideMode      SideMode                                     @map("side_mode")
+  createdAt     DateTime @db.Timestamptz(3) @default(now())  @map("created_at")
+  updatedAt     DateTime @db.Timestamptz(3) @updatedAt       @map("updated_at")
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Otp {
+  id                  String @id                                   @map("id")
+  ownerId             String                                       @map("owner_id")
+  verificationToken   String @unique                               @map("verification_token")
+  otpHash             String @unique                               @map("otp_hash")
+  purpose             OtpPurpose                                   @map("purpose")
+  medium              OtpMedium                                    @map("medium")
+  mediumIdentity      String                                       @map("medium_identity")
+  ackRequired         Boolean                                      @map("ack_required")
+  ackId               Int?                                         @map("ack_id")
+  ackUsed             Boolean?                                     @map("ack_used")
+  ackExpireAt         DateTime? @db.Timestamptz(3)                 @map("ack_expire_at")
+  failedCount         Int @default(0)                              @map("failed_count")
+  resendCount         Int @default(0)                              @map("resend_count")
+  maxFailed           Int                                          @map("max_failed")
+  maxResend           Int                                          @map("max_resend")
+  expireAt            DateTime @db.Timestamptz(3)                  @map("expire_at")
+  createdAt           DateTime @db.Timestamptz(3) @default(now())  @map("created_at")
+  updatedAt           DateTime @db.Timestamptz(3) @updatedAt       @map("updated_at")
+
+  owner ShopOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+}
+
+model UploadExpiration {
+  id              Int @id @default(autoincrement())   @map("id")
+  displayText     String                              @map("display_text")
+  valueInMinute   Int                                 @map("value_in_minute")
+  displayOrder    Int                                 @map("display_order")
+
+  @@map("upload_expirations")
+}
+
+model State {
+  id              Int @id @default(autoincrement())   @map("id")
+  displayName     String                              @map("display_name")
+  stateCode       Int?                                @map("state_code")
+  displayOrder    Int                                 @map("display_order")
+
+  districts District[]
+
+  @@map("states")
+}
+
+model District {
+  id              Int @id @default(autoincrement())   @map("id")
+  displayName     String                              @map("display_name")
+  stateId         Int                                 @map("state_id")
+  districtCode    Int?                                @map("district_code")
+  displayOrder    Int                                 @map("display_order")
+
+  state State @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  @@map("districts")
 }
