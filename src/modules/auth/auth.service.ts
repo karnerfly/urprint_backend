@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getRandomHex } from 'src/common/utils/random';
-import { LoginDto, UTokenResponse } from 'src/models/dto/auth.dto';
+import { JWTPayload, LoginDto, UTokenResponse } from 'src/models/dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +19,7 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto): Promise<UTokenResponse> {
-    let record = await this.database.shopOwner.findUnique({
+    const record = await this.database.shopOwner.findUnique({
       where: {
         email: dto.email,
       },
@@ -35,7 +35,7 @@ export class AuthService {
       },
     });
 
-    if (!record) {
+    if (!record || !record.shop) {
       throw new BadRequestException('Invalid credentials');
     }
 
@@ -45,12 +45,15 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    const accessToken = await this.jwtService.signAsync(
+    const accessToken = await this.jwtService.signAsync<JWTPayload>(
       {
         ownerId: record.id,
-        sub: record.email,
-        shopId: record.shop?.id,
+        ownerName: record.name,
+        ownerEmail: record.email,
         verified: record.verified,
+        shopId: record.shop.id,
+        shopName: record.shop.shopName,
+        uploadToken: record.shop.uploadToken,
       },
       {
         algorithm: 'HS256',
@@ -82,9 +85,9 @@ export class AuthService {
       otpRequired: record.otpRequired,
       otpGenerated: false,
       otpVerificationKey: null,
-      shopId: record.shop?.id!,
-      shopName: record.shop?.shopName!,
-      uploadToken: record.shop?.uploadToken!,
+      shopId: record.shop.id,
+      shopName: record.shop.shopName,
+      uploadToken: record.shop.uploadToken,
       token: {
         type: 'Bearer',
         accessToken,
@@ -92,7 +95,7 @@ export class AuthService {
         accessTokenExpireAt,
         refreshTokenExpireAt,
       },
-      createdAt: record.shop?.createdAt!,
+      createdAt: record.shop.createdAt,
       updatedAt: record.updatedAt,
     };
   }
@@ -130,16 +133,19 @@ export class AuthService {
       },
     });
 
-    if (!record) {
-      throw new ForbiddenException('invalid request');
+    if (!record || !record.owner || !record.owner.shop) {
+      throw new ForbiddenException('Invalid request');
     }
 
-    const newAccessToken = await this.jwtService.signAsync(
+    const newAccessToken = await this.jwtService.signAsync<JWTPayload>(
       {
-        ownerId: record.id,
-        sub: record.owner.email,
-        shopId: record.owner.shop?.id,
+        ownerId: record.ownerId,
+        ownerName: record.owner.name,
+        ownerEmail: record.owner.email,
         verified: record.owner.verified,
+        shopId: record.owner.shop.id,
+        shopName: record.owner.shop.shopName,
+        uploadToken: record.owner.shop.uploadToken,
       },
       {
         algorithm: 'HS256',
@@ -171,9 +177,9 @@ export class AuthService {
       otpRequired: record.owner.otpRequired,
       otpGenerated: false,
       otpVerificationKey: null,
-      shopId: record.owner.shop?.id!,
-      shopName: record.owner.shop?.shopName!,
-      uploadToken: record.owner.shop?.uploadToken!,
+      shopId: record.owner.shop.id,
+      shopName: record.owner.shop.shopName,
+      uploadToken: record.owner.shop.uploadToken,
       token: {
         type: 'Bearer',
         accessToken: newAccessToken,

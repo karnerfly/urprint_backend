@@ -34,3 +34,13 @@ export class LoginDto {
   @IsNotEmpty({ message: 'cannot be empty' })
   password: string;
 }
+
+export interface JWTPayload {
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  verified: boolean;
+  shopId: string;
+  shopName: string;
+  uploadToken: string;
+}

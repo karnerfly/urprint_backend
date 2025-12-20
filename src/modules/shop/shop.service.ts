@@ -1,11 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getRandomBase64Url } from 'src/common/utils/random';
 import { Snowflake } from 'src/common/utils/snowflake/snowflake.util';
-import { CreateShopDto } from 'src/models/dto/shop.dto';
+import { CreateShopDto, ShopLocationResponse } from 'src/models/dto/shop.dto';
 import { AuthService } from '../auth/auth.service';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
+import { Prisma } from 'src/common/database/generated/client';
 
 @Injectable()
 export class ShopService {
@@ -49,9 +54,41 @@ export class ShopService {
             },
           },
         },
+        location: {
+          create: {},
+        },
       },
     });
 
     return this.authService.login({ email: dto.email, password: dto.password });
+  }
+
+  async updateLocation(
+    shopId: string,
+    dto: Prisma.ShopLocationUpdateInput,
+  ): Promise<ShopLocationResponse> {
+    const result = await this.database.shop.update({
+      where: {
+        id: shopId,
+      },
+      data: {
+        location: {
+          update: {
+            ...dto,
+          },
+        },
+      },
+      select: {
+        location: {},
+      },
+    });
+
+    if (!result) {
+      throw new ServiceUnavailableException(
+        'Cannot update shop location at this moment.',
+      );
+    }
+
+    return result.location!;
   }
 }

@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 import { Match } from './tools';
 
 export class CreateShopDto {
@@ -22,6 +28,41 @@ export class CreateShopDto {
 
   @IsString({ message: 'must be a string' })
   @IsNotEmpty({ message: 'cannot be empty' })
-  @Match('password', { message: 'confirm password did not match' })
+  @Match<CreateShopDto>('password', {
+    message: 'confirm password did not match',
+  })
   confirmPassword: string;
+}
+
+export class UpdateShopLocationDto {
+  @IsOptional()
+  @IsString({ message: 'must be a string' })
+  street: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'must be a string' })
+  city: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'must be a string' })
+  district: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'must be a string' })
+  state: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'must be a string' })
+  pin: string | null;
+}
+
+export class ShopLocationResponse {
+  id: number;
+  street: string | null;
+  city: string | null;
+  district: string | null;
+  state: string | null;
+  pin: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }

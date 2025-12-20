@@ -1,13 +1,23 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import { ShopService } from './shop.service';
-import { CreateShopDto } from 'src/models/dto/shop.dto';
+import {
+  CreateShopDto,
+  ShopLocationResponse,
+  UpdateShopLocationDto,
+} from 'src/models/dto/shop.dto';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
 import type { Response } from 'express';
+import { AuthGuard, Public } from 'src/common/guards/auth/auth.guard';
+import { TokenData } from 'src/common/decorators/token.decorator';
+import type { JWTPayload } from 'src/models/dto/auth.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@UseGuards(AuthGuard)
 @Controller('shop')
 export class ShopController {
   constructor(private readonly shopService: ShopService) {}
 
+  @Public()
   @Post('create')
   async create(
     @Body() dto: CreateShopDto,
@@ -27,5 +37,14 @@ export class ShopController {
     });
 
     return resp;
+  }
+
+  @ApiBearerAuth('access-token')
+  @Patch('location')
+  async updateLocation(
+    @Body() dto: UpdateShopLocationDto,
+    @TokenData() tokenData: JWTPayload,
+  ): Promise<ShopLocationResponse> {
+    return await this.shopService.updateLocation(tokenData.shopId, dto);
   }
 }
