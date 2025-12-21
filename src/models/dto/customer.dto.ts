@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import type { ColorMode, SideMode } from 'src/common/database/generated/enums';
 
-export class GetUploadLinkResponse {
+export class UploadLinkResponse {
   shopId: string;
   customerToken: string;
   bucket: {
@@ -87,7 +87,7 @@ export class DocumentDto {
   sideMode: SideMode;
 }
 
-export class CompleteUploadResponse {
+export class UploadCodeResponse {
   uploadId: string;
   shopId: string;
   code: string;

@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
-import { UploadService } from './upload.service';
+import { CustomerService } from './customer.service';
 import {
   CompleteUploadDto,
-  CompleteUploadResponse,
-  GetUploadLinkResponse,
-} from 'src/models/dto/upload.dto';
+  UploadCodeResponse,
+  UploadLinkResponse,
+} from 'src/models/dto/customer.dto';
 import type { Response, Request } from 'express';
 import { ApiProperty, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
@@ -24,17 +24,17 @@ class MarkAsDeleteResponse {
   uploadId: string;
 }
 
-@Controller('upload')
-export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+@Controller('customer')
+export class CustomerController {
+  constructor(private readonly customerService: CustomerService) {}
 
-  @Get('link')
+  @Get('upload-link')
   async getUploadLink(
     @Query('uploadToken') uploadToken: string,
     @Query('files') files: string[],
     @Res({ passthrough: true }) res: Response,
-  ): Promise<GetUploadLinkResponse> {
-    const resp = await this.uploadService.getUploadLink(uploadToken, files);
+  ): Promise<UploadLinkResponse> {
+    const resp = await this.customerService.getUploadLink(uploadToken, files);
 
     res.cookie('customer.token', resp.customerToken, {
       domain:
@@ -53,34 +53,34 @@ export class UploadController {
     name: 'customerToken',
     required: false,
   })
-  @Get('code')
+  @Get('upload-code')
   async getUploadCode(
     @Req() req: Request,
     @Query('customerToken') customerToken: string | null,
-  ): Promise<CompleteUploadResponse> {
+  ): Promise<UploadCodeResponse> {
     if (!customerToken) {
       customerToken = req.cookies['customer.token'];
     }
 
-    return await this.uploadService.getUploadCode(customerToken ?? '');
+    return await this.customerService.getUploadCode(customerToken ?? '');
   }
 
-  @Post('complete')
+  @Post('complete-upload')
   async completeUpload(
     @Body() dto: CompleteUploadDto,
     @Req() req: Request,
-  ): Promise<CompleteUploadResponse> {
+  ): Promise<UploadCodeResponse> {
     if (!dto.customerToken) {
       dto.customerToken = req.cookies['customer.token'];
     }
 
-    return await this.uploadService.completeUpload(
+    return await this.customerService.completeUpload(
       dto.customerToken ?? '',
       dto,
     );
   }
 
-  @Post('mark-delete')
+  @Post('delete-upload')
   async markAsDeleted(
     @Body() dto: CustomerTokenDto,
     @Req() req: Request,
@@ -90,7 +90,9 @@ export class UploadController {
       dto.customerToken = req.cookies['customer.token'];
     }
 
-    const id = await this.uploadService.markAsDeleted(dto.customerToken ?? '');
+    const id = await this.customerService.markAsDeleted(
+      dto.customerToken ?? '',
+    );
 
     res.cookie('customer.token', '', {
       domain:

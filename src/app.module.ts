@@ -6,17 +6,21 @@ import { ShopModule } from './modules/shop/shop.module';
 import { ValidationPipe } from './common/pipes/validation.pipe';
 import { MasterdataModule } from './modules/masterdata/masterdata.module';
 import { JwtModule } from '@nestjs/jwt';
-import { UploadModule } from './modules/upload/upload.module';
+import { CustomerModule } from './modules/customer/customer.module';
 import { S3Module } from './common/s3/s3.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TaskModule } from './common/task/task.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    ScheduleModule.forRoot(),
     JwtModule,
-    ShopModule,
-    MasterdataModule,
-    UploadModule,
     S3Module,
+    TaskModule,
+    MasterdataModule,
+    ShopModule,
+    CustomerModule,
   ],
   providers: [
     {

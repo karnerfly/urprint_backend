@@ -7,12 +7,12 @@ import { getRandomCode, getRandomHex } from 'src/common/utils/random';
 import { Snowflake } from 'src/common/utils/snowflake/snowflake.util';
 import {
   CompleteUploadDto,
-  CompleteUploadResponse,
-  GetUploadLinkResponse,
-} from 'src/models/dto/upload.dto';
+  UploadCodeResponse,
+  UploadLinkResponse,
+} from 'src/models/dto/customer.dto';
 
 @Injectable()
-export class UploadService {
+export class CustomerService {
   constructor(
     private database: DatabaseService,
     private s3: S3Service,
@@ -22,7 +22,7 @@ export class UploadService {
   async getUploadLink(
     uploadToken: string,
     fileNames: string[],
-  ): Promise<GetUploadLinkResponse> {
+  ): Promise<UploadLinkResponse> {
     const shop = await this.database.shop.findUnique({
       where: {
         uploadToken,
@@ -54,7 +54,7 @@ export class UploadService {
       },
     });
 
-    const result: GetUploadLinkResponse = {
+    const result: UploadLinkResponse = {
       shopId: shop.id,
       customerToken,
       bucket: [],
@@ -76,7 +76,7 @@ export class UploadService {
   async completeUpload(
     customerToken: string,
     dto: CompleteUploadDto,
-  ): Promise<CompleteUploadResponse> {
+  ): Promise<UploadCodeResponse> {
     if (!dto.totalDocuments) {
       dto.totalDocuments = dto.documents.length;
     }
@@ -132,12 +132,15 @@ export class UploadService {
     };
   }
 
-  async getUploadCode(customerToken: string): Promise<CompleteUploadResponse> {
+  async getUploadCode(customerToken: string): Promise<UploadCodeResponse> {
     const upload = await this.database.upload.findFirst({
       where: {
         customerToken,
         completed: true,
         deleted: false,
+        expireAt: {
+          lt: new Date(),
+        },
       },
     });
 
@@ -160,6 +163,9 @@ export class UploadService {
         customerToken,
         completed: true,
         deleted: false,
+        expireAt: {
+          lt: new Date(),
+        },
       },
       data: {
         deleted: true,

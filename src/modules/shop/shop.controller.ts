@@ -99,4 +99,13 @@ export class ShopController {
     const deletedId = await this.shopService.deleteLocation(tokenData.shopId);
     return { status: 'ok', locationId: deletedId };
   }
+
+  @ApiBearerAuth('access-token')
+  @Get('upload')
+  async getUploades(
+    @TokenData() tokenData: JWTPayload,
+  ): Promise<DeleteLocationsResponse> {
+    const deletedId = await this.shopService.deleteLocation(tokenData.shopId);
+    return { status: 'ok', locationId: deletedId };
+  }
 }
