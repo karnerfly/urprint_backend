@@ -1,7 +1,11 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable } from '@nestjs/common';
+import { CONFIG_NAME, type Config } from '../config';
 
 @Injectable()
 export class S3Service {
@@ -11,15 +15,15 @@ export class S3Service {
   private accessKeyId: string;
   private secretAccessKey: string;
 
-  constructor(private config: ConfigService) {
-    this.bucketName = config.getOrThrow<string>('R2_BUCKET_NAME');
-    this.accountId = config.getOrThrow<string>('R2_ACCOUNT_ID');
-    this.accessKeyId = config.getOrThrow<string>('R2_ACCESS_KEY_ID');
-    this.secretAccessKey = config.getOrThrow<string>('R2_SECRET_ACCESS_KEY');
+  constructor(@Inject(CONFIG_NAME) private config: Config) {
+    this.bucketName = config.R2_BUCKET_NAME;
+    this.accountId = config.R2_ACCOUNT_ID;
+    this.accessKeyId = config.R2_ACCESS_KEY_ID;
+    this.secretAccessKey = config.R2_SECRET_ACCESS_KEY;
 
     this.client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${this.accountId}.r2.cloudflarestorage.com`,
+      region: 'ap-south-1',
+      // endpoint: `https://${this.accountId}.r2.cloudflarestorage.com`,
       credentials: {
         accessKeyId: this.accessKeyId,
         secretAccessKey: this.secretAccessKey,
@@ -28,19 +32,28 @@ export class S3Service {
   }
 
   async generateUploadPresignedUrl(key: string) {
-    const putUrl = await getSignedUrl(
+    return await getSignedUrl(
       this.client,
       new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
       }),
       {
-        expiresIn: this.config.getOrThrow<number>(
-          'R2_UPLOAD_URL_EXPIRY_SECONDS',
-        ),
+        expiresIn: this.config.R2_UPLOAD_URL_EXPIRY_SECONDS,
       },
     );
+  }
 
-    return putUrl;
+  async generateReadPresignedUrl(key: string) {
+    return await getSignedUrl(
+      this.client,
+      new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      }),
+      {
+        expiresIn: this.config.R2_READ_URL_EXPIRY_SECONDS,
+      },
+    );
   }
 }

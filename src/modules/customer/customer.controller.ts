@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  ParseArrayPipe,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import {
   CompleteUploadDto,
@@ -31,7 +40,14 @@ export class CustomerController {
   @Get('upload-link')
   async getUploadLink(
     @Query('uploadToken') uploadToken: string,
-    @Query('files') files: string[],
+    @Query(
+      'files',
+      new ParseArrayPipe({
+        items: String,
+        optional: true,
+      }),
+    )
+    files: string[],
     @Res({ passthrough: true }) res: Response,
   ): Promise<UploadLinkResponse> {
     const resp = await this.customerService.getUploadLink(uploadToken, files);

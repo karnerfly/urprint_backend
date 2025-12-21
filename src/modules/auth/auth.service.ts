@@ -1,19 +1,21 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
+import { CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getRandomHex } from 'src/common/utils/random';
 import { JWTPayload, LoginDto, UTokenResponse } from 'src/models/dto/auth.dto';
+import type { Config } from 'src/common/config';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private config: ConfigService,
+    @Inject(CONFIG_NAME) private config: Config,
     private database: DatabaseService,
     private jwtService: JwtService,
   ) {}
@@ -45,6 +47,14 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
+    const accessTokenExpireAt = new Date(
+      Date.now() + this.config.ACCESS_TOKEN_MAX_AGE_SECOND * 1000,
+    );
+
+    const refreshTokenExpireAt = new Date(
+      Date.now() + this.config.REFRESH_TOKEN_MAX_AGE_SECOND * 1000,
+    );
+
     const accessToken = await this.jwtService.signAsync<JWTPayload>(
       {
         ownerId: record.id,
@@ -57,23 +67,30 @@ export class AuthService {
       },
       {
         algorithm: 'HS256',
-        issuer: this.config.getOrThrow<string>('DOMAIN'),
-        expiresIn: this.config.getOrThrow<number>('ACCESS_TOKEN_EXPIRY'),
-        secret: this.config.getOrThrow<string>('JWT_SECRET'),
+        issuer: this.config.DOMAIN,
+        expiresIn: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
+        secret: this.config.JWT_SECRET,
       },
     );
     const refreshToken = getRandomHex(32);
 
-    const accessTokenExpireAt = new Date(Date.now() + 5 * 60000);
-    const refreshTokenExpireAt = new Date(Date.now() + 15 * 24 * 60 * 60000);
-
-    await this.database.ownerToken.update({
-      data: {
-        refreshToken,
-        refreshTokenExpireAt,
-      },
+    await this.database.shopOwner.update({
       where: {
-        ownerId: record.id,
+        id: record.id,
+      },
+      data: {
+        token: {
+          upsert: {
+            create: {
+              refreshToken,
+              refreshTokenExpireAt,
+            },
+            update: {
+              refreshToken,
+              refreshTokenExpireAt,
+            },
+          },
+        },
       },
     });
 
@@ -88,12 +105,14 @@ export class AuthService {
       shopId: record.shop.id,
       shopName: record.shop.shopName,
       uploadToken: record.shop.uploadToken,
-      token: {
+      tokens: {
         type: 'Bearer',
         accessToken,
         refreshToken,
         accessTokenExpireAt,
         refreshTokenExpireAt,
+        accessTokenMaxAge: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
+        refreshTokenMaxAge: this.config.REFRESH_TOKEN_MAX_AGE_SECOND,
       },
       createdAt: record.shop.createdAt,
       updatedAt: record.updatedAt,
@@ -131,6 +150,13 @@ export class AuthService {
       throw new ForbiddenException('Invalid request');
     }
 
+    const accessTokenExpireAt = new Date(
+      Date.now() + this.config.ACCESS_TOKEN_MAX_AGE_SECOND * 1000,
+    );
+    const refreshTokenExpireAt = new Date(
+      Date.now() + this.config.REFRESH_TOKEN_MAX_AGE_SECOND * 1000,
+    );
+
     const newAccessToken = await this.jwtService.signAsync<JWTPayload>(
       {
         ownerId: record.ownerId,
@@ -143,15 +169,12 @@ export class AuthService {
       },
       {
         algorithm: 'HS256',
-        issuer: this.config.getOrThrow<string>('DOMAIN'),
-        expiresIn: this.config.getOrThrow<number>('ACCESS_TOKEN_EXPIRY'),
-        secret: this.config.getOrThrow<string>('JWT_SECRET'),
+        issuer: this.config.DOMAIN,
+        expiresIn: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
+        secret: this.config.JWT_SECRET,
       },
     );
     const newRefreshToken = getRandomHex(32);
-
-    const accessTokenExpireAt = new Date(Date.now() + 5 * 60000);
-    const refreshTokenExpireAt = new Date(Date.now() + 15 * 24 * 60 * 60000);
 
     await this.database.ownerToken.update({
       where: {
@@ -174,12 +197,14 @@ export class AuthService {
       shopId: record.owner.shop.id,
       shopName: record.owner.shop.shopName,
       uploadToken: record.owner.shop.uploadToken,
-      token: {
+      tokens: {
         type: 'Bearer',
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
         accessTokenExpireAt,
         refreshTokenExpireAt,
+        accessTokenMaxAge: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
+        refreshTokenMaxAge: this.config.REFRESH_TOKEN_MAX_AGE_SECOND,
       },
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

@@ -11,17 +11,19 @@ export class UTokenResponse {
   shopId: string;
   shopName: string;
   uploadToken: string;
-  token: Token | null;
+  tokens: Tokens | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-class Token {
+class Tokens {
   type: string;
   accessToken: string;
-  accessTokenExpireAt: Date;
   refreshToken: string;
+  accessTokenExpireAt: Date;
   refreshTokenExpireAt: Date;
+  accessTokenMaxAge: number;
+  refreshTokenMaxAge: number;
 }
 
 export class LoginDto {

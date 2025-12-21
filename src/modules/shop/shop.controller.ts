@@ -3,9 +3,9 @@ import {
   Controller,
   Delete,
   Get,
-  NotFoundException,
   Patch,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +13,7 @@ import { ShopService } from './shop.service';
 import {
   CreateShopDto,
   ShopLocationResponse,
+  ShopUploadsResponse,
   UpdateShopLocationDto,
 } from 'src/models/dto/shop.dto';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
@@ -51,12 +52,12 @@ export class ShopController {
   ): Promise<UTokenResponse> {
     const resp = await this.shopService.createOwner(dto);
 
-    res.cookie('auth_token', resp.token?.refreshToken, {
+    res.cookie('auth_token', resp.tokens?.refreshToken, {
       domain:
         process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
           ? `.${process.env.DOMAIN}`
           : process.env.DOMAIN,
-      expires: resp.token?.refreshTokenExpireAt,
+      expires: resp.tokens?.refreshTokenExpireAt,
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
@@ -101,11 +102,11 @@ export class ShopController {
   }
 
   @ApiBearerAuth('access-token')
-  @Get('upload')
+  @Get('uploads')
   async getUploades(
+    @Query('code') code: string,
     @TokenData() tokenData: JWTPayload,
-  ): Promise<DeleteLocationsResponse> {
-    const deletedId = await this.shopService.deleteLocation(tokenData.shopId);
-    return { status: 'ok', locationId: deletedId };
+  ): Promise<ShopUploadsResponse> {
+    return await this.shopService.getUploads(tokenData.shopId, code);
   }
 }

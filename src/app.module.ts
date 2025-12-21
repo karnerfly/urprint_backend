@@ -10,10 +10,12 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { S3Module } from './common/s3/s3.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TaskModule } from './common/task/task.module';
+import { AppConfigModule } from './common/config/config.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ envFilePath: '.env' }),
+    AppConfigModule,
     ScheduleModule.forRoot(),
     JwtModule,
     S3Module,

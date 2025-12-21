@@ -7,11 +7,18 @@ import {
 import bcryptjs from 'bcryptjs';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getRandomBase64Url } from 'src/common/utils/random';
-import { Snowflake } from 'src/common/utils/snowflake/snowflake.util';
-import { CreateShopDto, ShopLocationResponse } from 'src/models/dto/shop.dto';
+import { Snowflake } from 'src/common/snowflake/snowflake.util';
+import {
+  CreateShopDto,
+  ShopLocationResponse,
+  ShopUploadedDocument,
+  ShopUploadsResponse,
+  UpdateShopLocationDto,
+} from 'src/models/dto/shop.dto';
 import { AuthService } from '../auth/auth.service';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
-import { Prisma } from 'src/common/database/generated/client';
+import { S3Service } from 'src/common/s3/s3.service';
+import { getHash } from 'src/common/utils/hash';
 
 @Injectable()
 export class ShopService {
@@ -19,6 +26,7 @@ export class ShopService {
     private database: DatabaseService,
     private authService: AuthService,
     private snowflake: Snowflake,
+    private s3: S3Service,
   ) {}
 
   async createOwner(dto: CreateShopDto): Promise<UTokenResponse> {
@@ -50,13 +58,7 @@ export class ShopService {
             name: dto.ownerName,
             passwordHash: hash,
             passwordSalt: salt,
-            token: {
-              create: {},
-            },
           },
-        },
-        location: {
-          create: {},
         },
       },
     });
@@ -85,7 +87,7 @@ export class ShopService {
 
   async updateLocation(
     shopId: string,
-    dto: Prisma.ShopLocationUpdateInput,
+    dto: UpdateShopLocationDto,
   ): Promise<ShopLocationResponse> {
     const result = await this.database.shop.update({
       where: {
@@ -93,8 +95,13 @@ export class ShopService {
       },
       data: {
         location: {
-          update: {
-            ...dto,
+          upsert: {
+            create: {
+              ...dto,
+            },
+            update: {
+              ...dto,
+            },
           },
         },
       },
@@ -154,5 +161,61 @@ export class ShopService {
     }
 
     return result.location.id;
+  }
+
+  async getUploads(shopId: string, code: string): Promise<ShopUploadsResponse> {
+    const upload = await this.database.upload.findFirst({
+      where: {
+        shopId,
+        code,
+        completed: true,
+        deleted: false,
+        expireAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        documents: {},
+        shop: {
+          select: {
+            uploadToken: true,
+          },
+        },
+      },
+    });
+
+    if (!upload) {
+      throw new NotFoundException('Resource not found');
+    }
+
+    const codeHash = getHash(upload.code, upload.customerToken);
+
+    const documents: ShopUploadedDocument[] = [];
+    if (upload.documents.length > 0) {
+      for (const doc of upload.documents) {
+        const key = `uploads/${upload.shop.uploadToken}/${codeHash}/${doc.name}`;
+        documents.push({
+          id: doc.id,
+          name: doc.name,
+          mediaType: doc.mediaType,
+          downloadable: doc.downloadable,
+          noOfCopies: doc.noOfCopies,
+          colorMode: doc.colorMode,
+          sideMode: doc.sideMode,
+          url: await this.s3.generateReadPresignedUrl(key),
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+        });
+      }
+    }
+
+    return {
+      uploadId: upload.id,
+      totalDocuments: upload.documentCount,
+      completed: upload.completed,
+      documents,
+      createdAt: upload.createdAt,
+      updatedAt: upload.updatedAt,
+    };
   }
 }

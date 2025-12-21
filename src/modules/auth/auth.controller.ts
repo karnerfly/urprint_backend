@@ -23,12 +23,34 @@ export class AuthController {
   ): Promise<UTokenResponse> {
     const resp = await this.authService.login(dto);
 
-    res.cookie('auth_token', resp.token?.refreshToken, {
+    res.cookie('auth_token', resp.tokens?.refreshToken, {
       domain:
         process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
           ? `.${process.env.DOMAIN}`
           : process.env.DOMAIN,
-      expires: resp.token?.refreshTokenExpireAt,
+      maxAge: resp.tokens?.refreshTokenMaxAge,
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    return resp;
+  }
+
+  @Post('refresh/tokens')
+  async refreshTokens(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<UTokenResponse> {
+    const refreshTokenCookie = req.cookies['auth_token'];
+    const resp = await this.authService.refreshTokens(refreshTokenCookie);
+
+    res.cookie('auth_token', resp.tokens?.refreshToken, {
+      domain:
+        process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
+          ? `.${process.env.DOMAIN}`
+          : process.env.DOMAIN,
+      maxAge: resp.tokens?.refreshTokenMaxAge,
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
@@ -58,27 +80,5 @@ export class AuthController {
     });
 
     return { status: 'ok' };
-  }
-
-  @Post('refresh/token')
-  async refreshTokens(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<UTokenResponse> {
-    const refreshTokenCookie = req.cookies['auth_token'];
-    const resp = await this.authService.refreshTokens(refreshTokenCookie);
-
-    res.cookie('auth_token', resp.token?.refreshToken, {
-      domain:
-        process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
-          ? `.${process.env.DOMAIN}`
-          : process.env.DOMAIN,
-      expires: resp.token?.refreshTokenExpireAt,
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-    });
-
-    return resp;
   }
 }

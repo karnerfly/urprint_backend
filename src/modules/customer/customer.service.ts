@@ -4,7 +4,7 @@ import { Prisma } from 'src/common/database/generated/client';
 import { S3Service } from 'src/common/s3/s3.service';
 import { getHash } from 'src/common/utils/hash';
 import { getRandomCode, getRandomHex } from 'src/common/utils/random';
-import { Snowflake } from 'src/common/utils/snowflake/snowflake.util';
+import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import {
   CompleteUploadDto,
   UploadCodeResponse,
@@ -35,7 +35,6 @@ export class CustomerService {
 
     const customerToken = getRandomHex(16);
     const tempCode = getRandomCode(8);
-    const codeHash = getHash(tempCode, customerToken);
 
     await this.database.shop.update({
       where: {
@@ -54,6 +53,7 @@ export class CustomerService {
       },
     });
 
+    const codeHash = getHash(tempCode, customerToken);
     const result: UploadLinkResponse = {
       shopId: shop.id,
       customerToken,
@@ -139,7 +139,7 @@ export class CustomerService {
         completed: true,
         deleted: false,
         expireAt: {
-          lt: new Date(),
+          gt: new Date(),
         },
       },
     });
@@ -164,7 +164,7 @@ export class CustomerService {
         completed: true,
         deleted: false,
         expireAt: {
-          lt: new Date(),
+          gt: new Date(),
         },
       },
       data: {

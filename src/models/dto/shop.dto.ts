@@ -6,6 +6,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Match } from './tools';
+import { ColorMode, SideMode } from 'src/common/database/generated/enums';
 
 export class CreateShopDto {
   @IsString({ message: 'must be a string' })
@@ -63,6 +64,28 @@ export class ShopLocationResponse {
   district: string | null;
   state: string | null;
   pin: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class ShopUploadsResponse {
+  uploadId: string;
+  totalDocuments: number;
+  completed: boolean;
+  documents: ShopUploadedDocument[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class ShopUploadedDocument {
+  id: string;
+  name: string;
+  mediaType: string;
+  downloadable: boolean;
+  noOfCopies: number;
+  colorMode: ColorMode;
+  sideMode: SideMode;
+  url: string;
   createdAt: Date;
   updatedAt: Date;
 }

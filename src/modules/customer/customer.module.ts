@@ -3,7 +3,7 @@ import { CustomerService } from './customer.service';
 import { CustomerController } from './customer.controller';
 import { DatabaseModule } from 'src/common/database/database.module';
 import { S3Module } from 'src/common/s3/s3.module';
-import { SnowflakeModule } from 'src/common/utils/snowflake/snowflake.module';
+import { SnowflakeModule } from 'src/common/snowflake/snowflake.module';
 
 @Module({
   imports: [DatabaseModule, S3Module, SnowflakeModule],
