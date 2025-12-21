@@ -64,13 +64,14 @@ model Shop {
   id            String @id                                    @map("id")
   shopName      String                                        @map("shop_name")
   ownerId       String @unique                                @map("owner_id")
-  locationId    Int? @unique                                  @map("location_id")
+  // locationId    Int? @unique                                  @map("location_id")
   uploadToken   String @unique                                @map("upload_token")
   createdAt     DateTime @db.Timestamptz(3) @default(now())   @map("created_at")
   updatedAt     DateTime @db.Timestamptz(3) @updatedAt        @map("updated_at")
 
   owner         ShopOwner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  location      ShopLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  // location      ShopLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  location      ShopLocation?
   uploads       Upload[]
 
   @@map("shops")
@@ -78,6 +79,7 @@ model Shop {
 
 model ShopLocation {
   id          Int @id @default(autoincrement())             @map("id")
+  shopId      String @unique                                @map("shop_id")
   street      String?                                       @map("street")
   city        String?                                       @map("city")
   district    String?                                       @map("district")
@@ -86,7 +88,7 @@ model ShopLocation {
   createdAt   DateTime @db.Timestamptz(3) @default(now())   @map("created_at")
   updatedAt   DateTime @db.Timestamptz(3) @updatedAt        @map("updated_at")
 
-  shop Shop?
+  shop Shop? @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@map("shop_locations")
 }

@@ -61,12 +61,12 @@ export class AuthController {
   }
 
   @Post('refresh/token')
-  async refresh(
+  async refreshTokens(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<UTokenResponse> {
-    const refreshToken = req.cookies['auth_token'] as string;
-    const resp = await this.authService.refresh(refreshToken);
+    const refreshTokenCookie = req.cookies['auth_token'];
+    const resp = await this.authService.refreshTokens(refreshTokenCookie);
 
     res.cookie('auth_token', resp.token?.refreshToken, {
       domain:

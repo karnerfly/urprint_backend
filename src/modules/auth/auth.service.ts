@@ -100,19 +100,13 @@ export class AuthService {
     };
   }
 
-  async refresh(refreshToken: string): Promise<UTokenResponse> {
+  async refreshTokens(refreshToken: string): Promise<UTokenResponse> {
     const record = await this.database.ownerToken.findFirst({
       where: {
-        AND: [
-          {
-            refreshToken,
-          },
-          {
-            refreshTokenExpireAt: {
-              gt: new Date(),
-            },
-          },
-        ],
+        refreshToken,
+        refreshTokenExpireAt: {
+          gt: new Date(),
+        },
       },
       include: {
         owner: {
@@ -160,12 +154,12 @@ export class AuthService {
     const refreshTokenExpireAt = new Date(Date.now() + 15 * 24 * 60 * 60000);
 
     await this.database.ownerToken.update({
+      where: {
+        ownerId: record.ownerId,
+      },
       data: {
         refreshToken: newRefreshToken,
         refreshTokenExpireAt,
-      },
-      where: {
-        ownerId: record.ownerId,
       },
     });
 
@@ -195,16 +189,10 @@ export class AuthService {
   async logout(ownerId: string): Promise<void> {
     const record = await this.database.ownerToken.updateMany({
       where: {
-        AND: [
-          {
-            ownerId,
-          },
-          {
-            refreshTokenExpireAt: {
-              gt: new Date(),
-            },
-          },
-        ],
+        ownerId,
+        refreshTokenExpireAt: {
+          gt: new Date(),
+        },
       },
       data: {
         refreshToken: null,

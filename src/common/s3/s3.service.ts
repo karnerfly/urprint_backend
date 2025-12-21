@@ -27,14 +27,18 @@ export class S3Service {
     });
   }
 
-  async getPreSignedUrl(key: string) {
+  async generateUploadPresignedUrl(key: string) {
     const putUrl = await getSignedUrl(
       this.client,
       new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
       }),
-      { expiresIn: 1800 },
+      {
+        expiresIn: this.config.getOrThrow<number>(
+          'R2_UPLOAD_URL_EXPIRY_SECONDS',
+        ),
+      },
     );
 
     return putUrl;

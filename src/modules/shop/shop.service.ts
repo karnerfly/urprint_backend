@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
@@ -20,7 +21,7 @@ export class ShopService {
     private snowflake: Snowflake,
   ) {}
 
-  async create(dto: CreateShopDto): Promise<UTokenResponse> {
+  async createOwner(dto: CreateShopDto): Promise<UTokenResponse> {
     const ownerId = await this.database.shopOwner.findUnique({
       where: {
         email: dto.email,
@@ -31,7 +32,7 @@ export class ShopService {
     });
 
     if (ownerId) {
-      throw new BadRequestException('A user with this email already exists.');
+      throw new BadRequestException('A user with this email already exists');
     }
 
     const salt = await bcryptjs.genSalt(10);
@@ -63,6 +64,25 @@ export class ShopService {
     return this.authService.login({ email: dto.email, password: dto.password });
   }
 
+  async deleteOwner(ownerId: string): Promise<string> {
+    const record = await this.database.shopOwner.delete({
+      where: {
+        id: ownerId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!record) {
+      throw new ServiceUnavailableException(
+        'Can not delete owner at this moment',
+      );
+    }
+
+    return record.id;
+  }
+
   async updateLocation(
     shopId: string,
     dto: Prisma.ShopLocationUpdateInput,
@@ -84,19 +104,19 @@ export class ShopService {
     });
 
     if (!result) {
-      throw new BadRequestException('Invalid shop id.');
+      throw new BadRequestException('Invalid request');
     }
 
     if (!result.location) {
       throw new ServiceUnavailableException(
-        'Can not update shop location at this moment.',
+        'Can not update shop location at this moment',
       );
     }
 
     return result.location;
   }
 
-  async getLocation(shopId: string): Promise<ShopLocationResponse | null> {
+  async getLocation(shopId: string): Promise<ShopLocationResponse> {
     const result = await this.database.shop.findFirst({
       where: {
         id: shopId,
@@ -106,10 +126,33 @@ export class ShopService {
       },
     });
 
-    if (!result) {
-      throw new BadRequestException('Invalid shop id.');
+    if (!result || !result.location) {
+      throw new NotFoundException('Resource not found');
     }
 
     return result.location;
+  }
+
+  async deleteLocation(shopId: string): Promise<number> {
+    const result = await this.database.shop.delete({
+      where: {
+        id: shopId,
+      },
+      select: {
+        location: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!result || !result.location) {
+      throw new ServiceUnavailableException(
+        'Can not delete shop location at this moment',
+      );
+    }
+
+    return result.location.id;
   }
 }

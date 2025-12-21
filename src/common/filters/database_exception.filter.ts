@@ -16,26 +16,26 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
   constructor(private httpAdapterHost: HttpAdapterHost) {}
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
     const { httpAdapter } = this.httpAdapterHost;
-    let response: HttpException;
+    let finalException: HttpException;
 
     switch (exception.code) {
       case 'P2000':
-        response = new BadRequestException('Provided value is too long');
+        finalException = new BadRequestException('Provided value is too long');
         break;
       case 'P2002':
-        response = new ConflictException('Duplicate value provided');
+        finalException = new ConflictException('Duplicate value provided');
         break;
       case 'P2025':
-        response = new NotFoundException('Resource not found');
+        finalException = new NotFoundException('Resource not found');
         break;
       default:
-        response = new InternalServerErrorException(exception.message);
+        finalException = new InternalServerErrorException(exception.message);
     }
 
     httpAdapter.reply(
       host.switchToHttp().getResponse(),
-      response,
-      response.getStatus(),
+      finalException.getResponse(),
+      finalException.getStatus(),
     );
   }
 }

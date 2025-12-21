@@ -6,7 +6,15 @@ import {
   GetUploadLinkResponse,
 } from 'src/models/dto/upload.dto';
 import type { Response, Request } from 'express';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiQuery } from '@nestjs/swagger';
+import { IsString, IsOptional } from 'class-validator';
+
+export class CustomerTokenDto {
+  @ApiProperty({ nullable: true })
+  @IsString({ message: 'must be a string' })
+  @IsOptional()
+  customerToken?: string;
+}
 
 class MarkAsDeleteResponse {
   @ApiProperty()
@@ -22,10 +30,11 @@ export class UploadController {
 
   @Get('link')
   async getUploadLink(
-    @Query('token') uploadToken: string,
+    @Query('uploadToken') uploadToken: string,
+    @Query('files') files: string[],
     @Res({ passthrough: true }) res: Response,
   ): Promise<GetUploadLinkResponse> {
-    const resp = await this.uploadService.getUploadLink(uploadToken);
+    const resp = await this.uploadService.getUploadLink(uploadToken, files);
 
     res.cookie('customer.token', resp.customerToken, {
       domain:
@@ -40,10 +49,20 @@ export class UploadController {
     return resp;
   }
 
+  @ApiQuery({
+    name: 'customerToken',
+    required: false,
+  })
   @Get('code')
-  async getUploadCode(@Req() req: Request): Promise<CompleteUploadResponse> {
-    const customerToken = req.cookies['customer.toknen'];
-    return await this.uploadService.getUploadCode(customerToken);
+  async getUploadCode(
+    @Req() req: Request,
+    @Query('customerToken') customerToken: string | null,
+  ): Promise<CompleteUploadResponse> {
+    if (!customerToken) {
+      customerToken = req.cookies['customer.token'];
+    }
+
+    return await this.uploadService.getUploadCode(customerToken ?? '');
   }
 
   @Post('complete')
@@ -51,17 +70,28 @@ export class UploadController {
     @Body() dto: CompleteUploadDto,
     @Req() req: Request,
   ): Promise<CompleteUploadResponse> {
-    const customerToken = req.cookies['customer.toknen'];
-    return await this.uploadService.completeUpload(customerToken, dto);
+    if (!dto.customerToken) {
+      dto.customerToken = req.cookies['customer.token'];
+    }
+
+    return await this.uploadService.completeUpload(
+      dto.customerToken ?? '',
+      dto,
+    );
   }
 
   @Post('mark-delete')
   async markAsDeleted(
+    @Body() dto: CustomerTokenDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<MarkAsDeleteResponse> {
-    const customerToken = req.cookies['customer.toknen'];
-    const id = await this.uploadService.markAsDeleted(customerToken);
+    if (!dto.customerToken) {
+      dto.customerToken = req.cookies['customer.token'];
+    }
+
+    const id = await this.uploadService.markAsDeleted(dto.customerToken ?? '');
+
     res.cookie('customer.token', '', {
       domain:
         process.env.DOMAIN && process.env.DOMAIN !== 'localhost'

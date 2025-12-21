@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Patch,
@@ -19,7 +20,23 @@ import type { Response } from 'express';
 import { AuthGuard, Public } from 'src/common/guards/auth/auth.guard';
 import { TokenData } from 'src/common/decorators/token.decorator';
 import type { JWTPayload } from 'src/models/dto/auth.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+
+class DeleteOwnerResponse {
+  @ApiProperty()
+  status: string;
+
+  @ApiProperty()
+  ownerId: string;
+}
+
+class DeleteLocationsResponse {
+  @ApiProperty()
+  status: string;
+
+  @ApiProperty()
+  locationId: number;
+}
 
 @UseGuards(AuthGuard)
 @Controller('shop')
@@ -27,12 +44,12 @@ export class ShopController {
   constructor(private readonly shopService: ShopService) {}
 
   @Public()
-  @Post('create')
-  async create(
+  @Post('owner')
+  async createOwner(
     @Body() dto: CreateShopDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<UTokenResponse> {
-    const resp = await this.shopService.create(dto);
+    const resp = await this.shopService.createOwner(dto);
 
     res.cookie('auth_token', resp.token?.refreshToken, {
       domain:
@@ -49,6 +66,15 @@ export class ShopController {
   }
 
   @ApiBearerAuth('access-token')
+  @Delete('owner')
+  async deleteOwner(
+    @TokenData() tokenData: JWTPayload,
+  ): Promise<DeleteOwnerResponse> {
+    const deletedId = await this.shopService.deleteOwner(tokenData.ownerId);
+    return { status: 'ok', ownerId: deletedId };
+  }
+
+  @ApiBearerAuth('access-token')
   @Patch('location')
   async updateLocation(
     @Body() dto: UpdateShopLocationDto,
@@ -62,11 +88,15 @@ export class ShopController {
   async getLocation(
     @TokenData() tokenData: JWTPayload,
   ): Promise<ShopLocationResponse> {
-    const resp = await this.shopService.getLocation(tokenData.shopId);
-    if (!resp) {
-      throw new NotFoundException('location not found.');
-    }
+    return await this.shopService.getLocation(tokenData.shopId);
+  }
 
-    return resp;
+  @ApiBearerAuth('access-token')
+  @Delete('location')
+  async deleteLocation(
+    @TokenData() tokenData: JWTPayload,
+  ): Promise<DeleteLocationsResponse> {
+    const deletedId = await this.shopService.deleteLocation(tokenData.shopId);
+    return { status: 'ok', locationId: deletedId };
   }
 }

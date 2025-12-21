@@ -19,7 +19,10 @@ export class UploadService {
     private snowflake: Snowflake,
   ) {}
 
-  async getUploadLink(uploadToken: string): Promise<GetUploadLinkResponse> {
+  async getUploadLink(
+    uploadToken: string,
+    fileNames: string[],
+  ): Promise<GetUploadLinkResponse> {
     const shop = await this.database.shop.findUnique({
       where: {
         uploadToken,
@@ -33,9 +36,6 @@ export class UploadService {
     const customerToken = getRandomHex(16);
     const tempCode = getRandomCode(8);
     const codeHash = getHash(tempCode, customerToken);
-
-    const key = `uploads/${uploadToken}/${codeHash}`;
-    const url = await this.s3.getPreSignedUrl(key);
 
     await this.database.shop.update({
       where: {
@@ -54,25 +54,41 @@ export class UploadService {
       },
     });
 
-    return {
+    const result: GetUploadLinkResponse = {
       shopId: shop.id,
       customerToken,
-      bucketKey: key,
-      uploadLink: url,
+      bucket: [],
     };
+
+    for (const fileName of fileNames) {
+      const key = `uploads/${uploadToken}/${codeHash}/${fileName}`;
+      const url = await this.s3.generateUploadPresignedUrl(key);
+      result.bucket.push({
+        fileName,
+        key,
+        uploadLink: url,
+      });
+    }
+
+    return result;
   }
 
   async completeUpload(
     customerToken: string,
     dto: CompleteUploadDto,
   ): Promise<CompleteUploadResponse> {
+    if (!dto.totalDocuments) {
+      dto.totalDocuments = dto.documents.length;
+    }
+
     const result = await this.database.upload.updateManyAndReturn({
       where: {
         customerToken,
         completed: false,
+        deleted: false,
       },
       data: {
-        documentCount: dto.noOfDocuments,
+        documentCount: dto.totalDocuments,
         completed: true,
         expireAt: new Date(Date.now() + dto.expireInMinute * 60 * 1000),
       },
@@ -86,7 +102,7 @@ export class UploadService {
     });
 
     if (result.length == 0) {
-      throw new BadRequestException('invalid request');
+      throw new BadRequestException('Invalid request');
     }
 
     const upload = result[0];
@@ -105,7 +121,7 @@ export class UploadService {
       }),
     );
 
-    this.database.document.createMany({ data: entities });
+    await this.database.document.createMany({ data: entities });
 
     return {
       code: upload.code,
@@ -121,11 +137,12 @@ export class UploadService {
       where: {
         customerToken,
         completed: true,
+        deleted: false,
       },
     });
 
     if (!upload) {
-      throw new BadRequestException('invalid request');
+      throw new BadRequestException('Invalid request');
     }
 
     return {
@@ -142,6 +159,7 @@ export class UploadService {
       where: {
         customerToken,
         completed: true,
+        deleted: false,
       },
       data: {
         deleted: true,
@@ -152,7 +170,7 @@ export class UploadService {
     });
 
     if (result.length == 0) {
-      throw new BadRequestException('invalid request');
+      throw new BadRequestException('Invalid request');
     }
 
     return result[0].id;
