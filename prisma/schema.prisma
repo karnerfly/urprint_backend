@@ -97,6 +97,7 @@ model Upload {
   shopId          String                                       @map("shop_id")
   customerToken   String @unique                               @map("customer_token")
   documentCount   Int                                          @map("document_count")
+  completed       Boolean @default(false)                      @map("completed")
   deleted         Boolean @default(false)                      @map("deleted")
   expireAt        DateTime @db.Timestamptz(3)                  @map("expire_at")
   createdAt       DateTime @db.Timestamptz(3) @default(now())  @map("created_at")

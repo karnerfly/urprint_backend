@@ -84,11 +84,32 @@ export class ShopService {
     });
 
     if (!result) {
+      throw new BadRequestException('Invalid shop id.');
+    }
+
+    if (!result.location) {
       throw new ServiceUnavailableException(
-        'Cannot update shop location at this moment.',
+        'Can not update shop location at this moment.',
       );
     }
 
-    return result.location!;
+    return result.location;
+  }
+
+  async getLocation(shopId: string): Promise<ShopLocationResponse | null> {
+    const result = await this.database.shop.findFirst({
+      where: {
+        id: shopId,
+      },
+      select: {
+        location: {},
+      },
+    });
+
+    if (!result) {
+      throw new BadRequestException('Invalid shop id.');
+    }
+
+    return result.location;
   }
 }

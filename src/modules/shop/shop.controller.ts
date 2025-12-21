@@ -1,4 +1,13 @@
-import { Body, Controller, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Patch,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ShopService } from './shop.service';
 import {
   CreateShopDto,
@@ -46,5 +55,18 @@ export class ShopController {
     @TokenData() tokenData: JWTPayload,
   ): Promise<ShopLocationResponse> {
     return await this.shopService.updateLocation(tokenData.shopId, dto);
+  }
+
+  @ApiBearerAuth('access-token')
+  @Get('location')
+  async getLocation(
+    @TokenData() tokenData: JWTPayload,
+  ): Promise<ShopLocationResponse> {
+    const resp = await this.shopService.getLocation(tokenData.shopId);
+    if (!resp) {
+      throw new NotFoundException('location not found.');
+    }
+
+    return resp;
   }
 }

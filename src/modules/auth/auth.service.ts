@@ -57,9 +57,9 @@ export class AuthService {
       },
       {
         algorithm: 'HS256',
-        issuer: this.config.get<string>('DOMAIN'),
-        expiresIn: this.config.get<number>('ACCESS_TOKEN_EXPIRY'),
-        secret: this.config.get<string>('JWT_SECRET'),
+        issuer: this.config.getOrThrow<string>('DOMAIN'),
+        expiresIn: this.config.getOrThrow<number>('ACCESS_TOKEN_EXPIRY'),
+        secret: this.config.getOrThrow<string>('JWT_SECRET'),
       },
     );
     const refreshToken = getRandomHex(32);
@@ -149,9 +149,9 @@ export class AuthService {
       },
       {
         algorithm: 'HS256',
-        issuer: this.config.get<string>('DOMAIN'),
-        expiresIn: this.config.get<number>('ACCESS_TOKEN_EXPIRY'),
-        secret: this.config.get<string>('JWT_SECRET'),
+        issuer: this.config.getOrThrow<string>('DOMAIN'),
+        expiresIn: this.config.getOrThrow<number>('ACCESS_TOKEN_EXPIRY'),
+        secret: this.config.getOrThrow<string>('JWT_SECRET'),
       },
     );
     const newRefreshToken = getRandomHex(32);
@@ -190,5 +190,30 @@ export class AuthService {
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
+  }
+
+  async logout(ownerId: string): Promise<void> {
+    const record = await this.database.ownerToken.updateMany({
+      where: {
+        AND: [
+          {
+            ownerId,
+          },
+          {
+            refreshTokenExpireAt: {
+              gt: new Date(),
+            },
+          },
+        ],
+      },
+      data: {
+        refreshToken: null,
+        refreshTokenExpireAt: null,
+      },
+    });
+
+    if (!record) {
+      throw new ForbiddenException('Invalid request');
+    }
   }
 }

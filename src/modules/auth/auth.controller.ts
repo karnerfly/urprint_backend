@@ -1,7 +1,16 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, UTokenResponse } from 'src/models/dto/auth.dto';
+import type { JWTPayload } from 'src/models/dto/auth.dto';
 import type { Request, Response } from 'express';
+import { AuthGuard } from 'src/common/guards/auth/auth.guard';
+import { ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+import { TokenData } from 'src/common/decorators/token.decorator';
+
+class LogoutResponse {
+  @ApiProperty()
+  status: string;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -26,6 +35,29 @@ export class AuthController {
     });
 
     return resp;
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
+  @Post('logout')
+  async logout(
+    @TokenData() tokenData: JWTPayload,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LogoutResponse> {
+    await this.authService.logout(tokenData.ownerId);
+
+    res.cookie('auth_token', '', {
+      domain:
+        process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
+          ? `.${process.env.DOMAIN}`
+          : process.env.DOMAIN,
+      path: '/',
+      maxAge: -1,
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    return { status: 'ok' };
   }
 
   @Post('refresh/token')
