@@ -1,6 +1,11 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { DatabaseExceptionFilter } from './common/filters/database_exception.filter';
 import { ShopModule } from './modules/shop/shop.module';
 import { ValidationPipe } from './common/pipes/validation.pipe';
@@ -11,12 +16,22 @@ import { S3Module } from './common/s3/s3.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TaskModule } from './common/task/task.module';
 import { AppConfigModule } from './common/config/config.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { CsrfMiddleware } from './common/middlewares/csrf.middleware';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: '.env' }),
     AppConfigModule,
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 100,
+        },
+      ],
+    }),
     JwtModule,
     S3Module,
     TaskModule,
@@ -33,6 +48,17 @@ import { AppConfigModule } from './common/config/config.module';
       provide: APP_PIPE,
       useClass: ValidationPipe,
     },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(CsrfMiddleware)
+      .exclude({ path: '/auth/csrf', method: RequestMethod.GET })
+      .forRoutes('*path');
+  }
+}

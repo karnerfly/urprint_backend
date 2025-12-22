@@ -1,7 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  Inject,
   ParseArrayPipe,
   Post,
   Query,
@@ -11,31 +15,22 @@ import {
 import { CustomerService } from './customer.service';
 import {
   CompleteUploadDto,
+  CustomerTokenDto,
+  MarkAsDeleteResponse,
   UploadCodeResponse,
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
 import type { Response, Request } from 'express';
-import { ApiProperty, ApiQuery } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
-
-export class CustomerTokenDto {
-  @ApiProperty({ nullable: true })
-  @IsString({ message: 'must be a string' })
-  @IsOptional()
-  customerToken?: string;
-}
-
-class MarkAsDeleteResponse {
-  @ApiProperty()
-  status: string;
-
-  @ApiProperty()
-  uploadId: string;
-}
+import { ApiQuery } from '@nestjs/swagger';
+import { CONFIG_NAME } from 'src/common/config';
+import type { AppConfig } from 'src/common/config';
 
 @Controller('customer')
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+  constructor(
+    private readonly customerService: CustomerService,
+    @Inject(CONFIG_NAME) private config: AppConfig,
+  ) {}
 
   @Get('upload-link')
   async getUploadLink(
@@ -53,10 +48,7 @@ export class CustomerController {
     const resp = await this.customerService.getUploadLink(uploadToken, files);
 
     res.cookie('customer.token', resp.customerToken, {
-      domain:
-        process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
-          ? `.${process.env.DOMAIN}`
-          : process.env.DOMAIN,
+      domain: this.config.GetWildCardDomain(),
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
@@ -65,56 +57,61 @@ export class CustomerController {
     return resp;
   }
 
+  @Get('upload-code')
   @ApiQuery({
     name: 'customerToken',
     required: false,
   })
-  @Get('upload-code')
   async getUploadCode(
     @Req() req: Request,
     @Query('customerToken') customerToken: string | null,
   ): Promise<UploadCodeResponse> {
     if (!customerToken) {
-      customerToken = req.cookies['customer.token'];
+      customerToken = req.cookies['customer.token'] as string;
     }
 
-    return await this.customerService.getUploadCode(customerToken ?? '');
+    if (!customerToken) {
+      throw new BadRequestException('Invalid customer token');
+    }
+
+    return await this.customerService.getUploadCode(customerToken);
   }
 
+  @HttpCode(200)
   @Post('complete-upload')
   async completeUpload(
     @Body() dto: CompleteUploadDto,
     @Req() req: Request,
   ): Promise<UploadCodeResponse> {
     if (!dto.customerToken) {
-      dto.customerToken = req.cookies['customer.token'];
+      dto.customerToken = req.cookies['customer.token'] as string;
     }
 
-    return await this.customerService.completeUpload(
-      dto.customerToken ?? '',
-      dto,
-    );
+    if (!dto.customerToken) {
+      throw new BadRequestException('Invalid customer token');
+    }
+
+    return await this.customerService.completeUpload(dto.customerToken, dto);
   }
 
-  @Post('delete-upload')
+  @Delete('upload')
   async markAsDeleted(
     @Body() dto: CustomerTokenDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<MarkAsDeleteResponse> {
     if (!dto.customerToken) {
-      dto.customerToken = req.cookies['customer.token'];
+      dto.customerToken = req.cookies['customer.token'] as string;
     }
 
-    const id = await this.customerService.markAsDeleted(
-      dto.customerToken ?? '',
-    );
+    if (!dto.customerToken) {
+      throw new BadRequestException('Invalid customer token');
+    }
+
+    const id = await this.customerService.markAsDeleted(dto.customerToken);
 
     res.cookie('customer.token', '', {
-      domain:
-        process.env.DOMAIN && process.env.DOMAIN !== 'localhost'
-          ? `.${process.env.DOMAIN}`
-          : process.env.DOMAIN,
+      domain: this.config.GetWildCardDomain(),
       path: '/',
       httpOnly: true,
       sameSite: 'lax',

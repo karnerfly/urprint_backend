@@ -9,7 +9,10 @@ import { DatabaseService } from 'src/common/database/database.service';
 import { getRandomBase64Url } from 'src/common/utils/random';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import {
+  AddPhoneNumberDto,
   CreateShopDto,
+  DeletePhoneNumberDto,
+  PhoneNumberResponse,
   ShopLocationResponse,
   ShopUploadedDocument,
   ShopUploadsResponse,
@@ -161,6 +164,73 @@ export class ShopService {
     }
 
     return result.location.id;
+  }
+
+  async addPhoneNumber(
+    ownerId: string,
+    dto: AddPhoneNumberDto,
+  ): Promise<number> {
+    const phoneNoCount = await this.database.ownerPhone.count({
+      where: {
+        ownerId,
+      },
+    });
+
+    if (phoneNoCount >= 2) {
+      throw new BadRequestException('Max phone number exceed');
+    }
+
+    const result = await this.database.ownerPhone.create({
+      data: {
+        ownerId,
+        phone: dto.phone,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return result.id;
+  }
+
+  async getPhoneNumbers(ownerId: string): Promise<PhoneNumberResponse> {
+    const result = await this.database.ownerPhone.findMany({
+      where: {
+        ownerId,
+      },
+      select: {
+        id: true,
+        phone: true,
+      },
+    });
+
+    const resp: PhoneNumberResponse = {
+      ownerId,
+      phones: [],
+    };
+
+    for (const p of result) {
+      resp.phones.push({ id: p.id, value: p.phone });
+    }
+
+    return resp;
+  }
+
+  async deletePhoneNumber(
+    ownerId: string,
+    dto: DeletePhoneNumberDto,
+  ): Promise<number> {
+    const result = await this.database.ownerPhone.delete({
+      where: {
+        id: dto.phoneNumberId,
+        ownerId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return result.id;
   }
 
   async getUploads(shopId: string, code: string): Promise<ShopUploadsResponse> {

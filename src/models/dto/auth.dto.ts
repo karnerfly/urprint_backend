@@ -46,3 +46,13 @@ export interface JWTPayload {
   shopName: string;
   uploadToken: string;
 }
+
+export class LogoutResponse {
+  status: string;
+}
+
+export class CsrfResponse {
+  cookieName: string;
+  headerName: string;
+  value: string;
+}

@@ -9,10 +9,13 @@ export const EnvSchema = z.object({
 
   DATABASE_URL: z.url(),
 
+  CSRF_HEADER_NAME: z.string(),
+
   JWT_SECRET: z.string().min(32),
   ACCESS_TOKEN_MAX_AGE_SECOND: z.coerce.number().int().positive(),
   REFRESH_TOKEN_MAX_AGE_SECOND: z.coerce.number().int().positive(),
 
+  R2_REGION: z.string(),
   R2_BUCKET_NAME: z.string(),
   R2_ACCOUNT_ID: z.string(),
   R2_ACCESS_KEY_ID: z.string(),
@@ -22,3 +25,9 @@ export const EnvSchema = z.object({
 });
 
 export type Config = z.infer<typeof EnvSchema>;
+
+export type ConfigFunctions = {
+  GetWildCardDomain: () => string;
+};
+
+export type AppConfig = Config & ConfigFunctions;

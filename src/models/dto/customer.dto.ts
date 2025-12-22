@@ -94,3 +94,14 @@ export class UploadCodeResponse {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export class CustomerTokenDto {
+  @IsString({ message: 'must be a string' })
+  @IsOptional()
+  customerToken: string | null;
+}
+
+export class MarkAsDeleteResponse {
+  status: string;
+  uploadId: string;
+}

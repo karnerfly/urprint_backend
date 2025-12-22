@@ -1,8 +1,11 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
+  IsPhoneNumber,
   IsString,
+  Min,
   MinLength,
 } from 'class-validator';
 import { Match } from './tools';
@@ -57,6 +60,19 @@ export class UpdateShopLocationDto {
   pin: string | null;
 }
 
+export class AddPhoneNumberDto {
+  @IsPhoneNumber('IN', { message: 'must be a valid phone number' })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  phone: string;
+}
+
+export class DeletePhoneNumberDto {
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 0 })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  @Min(1, { message: 'must be a valid phone number id' })
+  phoneNumberId: number;
+}
+
 export class ShopLocationResponse {
   id: number;
   street: string | null;
@@ -88,4 +104,29 @@ export class ShopUploadedDocument {
   url: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export class DeleteOwnerResponse {
+  status: string;
+  ownerId: string;
+}
+
+export class DeleteLocationsResponse {
+  status: string;
+  locationId: number;
+}
+
+export class AddPhoneNumberResponse {
+  status: string;
+  phoneNumberId: number;
+}
+
+export class PhoneNumberResponse {
+  ownerId: string;
+  phones: { id: number; value: string }[];
+}
+
+export class DeletePhoneNumberResponse {
+  status: string;
+  phoneNumberId: number;
 }

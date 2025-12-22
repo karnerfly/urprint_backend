@@ -2,11 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { VersioningType } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: {
       origin: process.env.ALLOWED_ORIGIN,
       credentials: true,
@@ -19,6 +21,8 @@ async function bootstrap() {
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     },
   });
+
+  app.set('trust proxy', 1);
   app.setGlobalPrefix('api/v1');
   app.enableVersioning({
     type: VersioningType.URI,
@@ -26,6 +30,13 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      xssFilter: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   const config = new DocumentBuilder()
     .setTitle('Api Documentation')
@@ -40,6 +51,11 @@ async function bootstrap() {
       },
       'access-token',
     )
+    .addSecurity('csrf', {
+      type: 'apiKey',
+      name: process.env.CSRF_HEADER_NAME,
+      in: 'header',
+    })
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
