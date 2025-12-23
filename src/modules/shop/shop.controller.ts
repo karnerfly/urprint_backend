@@ -23,7 +23,8 @@ import {
   DeletePhoneNumberResponse,
   PhoneNumberResponse,
   ShopLocationResponse,
-  ShopUploadsResponse,
+  ShopPublicDetailsResponse,
+  ShopUploadResponse,
   UpdateShopLocationDto,
 } from 'src/models/dto/shop.dto';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
@@ -130,16 +131,28 @@ export class ShopController {
     return { status: 'ok', phoneNumberId: id };
   }
 
-  @Get('uploads')
+  @Get('upload')
   @ApiBearerAuth('access-token')
   async getUploades(
     @Query('code') code: string,
     @TokenData() tokenData: JWTPayload,
-  ): Promise<ShopUploadsResponse> {
+  ): Promise<ShopUploadResponse> {
     if (!code) {
       throw new BadRequestException('Invalid code');
     }
 
-    return await this.shopService.getUploads(tokenData.shopId, code);
+    return await this.shopService.getUpload(tokenData.shopId, code);
+  }
+
+  @Get('/public-details')
+  @Public()
+  async getPublicDetails(
+    @Query('uploadToken') uploadToken: string,
+  ): Promise<ShopPublicDetailsResponse> {
+    if (!uploadToken) {
+      throw new BadRequestException('Invalid code');
+    }
+
+    return await this.shopService.getPublicDetails(uploadToken);
   }
 }

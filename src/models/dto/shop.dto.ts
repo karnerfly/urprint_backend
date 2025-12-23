@@ -84,7 +84,7 @@ export class ShopLocationResponse {
   updatedAt: Date;
 }
 
-export class ShopUploadsResponse {
+export class ShopUploadResponse {
   uploadId: string;
   totalDocuments: number;
   completed: boolean;
@@ -129,4 +129,9 @@ export class PhoneNumberResponse {
 export class DeletePhoneNumberResponse {
   status: string;
   phoneNumberId: number;
+}
+
+export class ShopPublicDetailsResponse {
+  shopName: string;
+  ownerName: string;
 }

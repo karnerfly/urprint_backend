@@ -14,8 +14,9 @@ import {
   DeletePhoneNumberDto,
   PhoneNumberResponse,
   ShopLocationResponse,
+  ShopPublicDetailsResponse,
   ShopUploadedDocument,
-  ShopUploadsResponse,
+  ShopUploadResponse,
   UpdateShopLocationDto,
 } from 'src/models/dto/shop.dto';
 import { AuthService } from '../auth/auth.service';
@@ -233,7 +234,7 @@ export class ShopService {
     return result.id;
   }
 
-  async getUploads(shopId: string, code: string): Promise<ShopUploadsResponse> {
+  async getUpload(shopId: string, code: string): Promise<ShopUploadResponse> {
     const upload = await this.database.upload.findFirst({
       where: {
         shopId,
@@ -286,6 +287,33 @@ export class ShopService {
       documents,
       createdAt: upload.createdAt,
       updatedAt: upload.updatedAt,
+    };
+  }
+
+  async getPublicDetails(
+    uploadToken: string,
+  ): Promise<ShopPublicDetailsResponse> {
+    const result = await this.database.shop.findFirst({
+      where: {
+        uploadToken,
+      },
+      select: {
+        shopName: true,
+        owner: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!result) {
+      throw new BadRequestException('Invalid upload token');
+    }
+
+    return {
+      shopName: result.shopName,
+      ownerName: result.owner.name,
     };
   }
 }
