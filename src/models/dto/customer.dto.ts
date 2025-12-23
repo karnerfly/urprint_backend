@@ -101,7 +101,7 @@ export class CustomerTokenDto {
   customerToken: string | null;
 }
 
-export class MarkAsDeleteResponse {
+export class DeleteUploadResponse {
   status: string;
   uploadId: string;
 }

@@ -16,8 +16,7 @@ import {
 import { CustomerService } from './customer.service';
 import {
   CompleteUploadDto,
-  CustomerTokenDto,
-  MarkAsDeleteResponse,
+  DeleteUploadResponse,
   UploadCodeResponse,
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
@@ -51,6 +50,7 @@ export class CustomerController {
 
     res.cookie('customer.token', resp.customerToken, {
       domain: this.config.GetWildCardDomain(),
+      maxAge: 1000 * 60 * 60 * 24,
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
@@ -111,7 +111,7 @@ export class CustomerController {
     @Query('customerToken') customerToken: string | null,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<MarkAsDeleteResponse> {
+  ): Promise<DeleteUploadResponse> {
     if (!customerToken) {
       customerToken = req.cookies['customer.token'] as string;
     }
@@ -120,7 +120,7 @@ export class CustomerController {
       throw new BadRequestException('Invalid customer token');
     }
 
-    const id = await this.customerService.markAsDeleted(customerToken);
+    const id = await this.customerService.deleteUpload(customerToken);
 
     res.cookie('customer.token', '', {
       domain: this.config.GetWildCardDomain(),

@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Inject,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -50,9 +51,9 @@ export class ShopController {
   ): Promise<UTokenResponse> {
     const resp = await this.shopService.createOwner(dto);
 
-    res.cookie('auth_session', resp.tokens?.refreshToken, {
+    res.cookie('auth_session', resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
-      expires: resp.tokens?.refreshTokenExpireAt,
+      maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
@@ -117,10 +118,15 @@ export class ShopController {
   @Delete('owner/phone')
   @ApiBearerAuth('access-token')
   async deletePhone(
-    @Body() dto: DeletePhoneNumberDto,
+    @Query('phoneNumberId', ParseIntPipe) phoneNumberId: number,
     @TokenData() tokenData: JWTPayload,
   ): Promise<DeletePhoneNumberResponse> {
-    const id = await this.shopService.deletePhoneNumber(tokenData.ownerId, dto);
+    if (phoneNumberId < 1) {
+      throw new BadRequestException('Invalid phone number id');
+    }
+    const id = await this.shopService.deletePhoneNumber(tokenData.ownerId, {
+      phoneNumberId,
+    });
     return { status: 'ok', phoneNumberId: id };
   }
 

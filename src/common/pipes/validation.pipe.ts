@@ -27,8 +27,14 @@ export class ValidationPipe implements PipeTransform {
     });
 
     if (errors.length > 0) {
-      const formattedErrors = this.formatErrors(errors);
-      throw new BadRequestException(formattedErrors);
+      const fieldErrors = this.formatErrors(errors);
+
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Validation failed',
+        fieldErrors,
+      });
     }
 
     return value;
@@ -59,7 +65,7 @@ export class ValidationPipe implements PipeTransform {
         });
       }
 
-      if (error.children && error.children.length > 0) {
+      if (error.children?.length) {
         result.push(...this.formatErrors(error.children, fieldPath));
       }
     }

@@ -41,9 +41,9 @@ export class AuthController {
   ): Promise<UTokenResponse> {
     const resp = await this.authService.login(dto);
 
-    res.cookie('auth_session', resp.tokens?.refreshToken, {
+    res.cookie('auth_session', resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
-      maxAge: resp.tokens?.refreshTokenMaxAge,
+      maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
@@ -93,9 +93,9 @@ export class AuthController {
 
     const resp = await this.authService.refreshTokens(refreshTokenCookie);
 
-    res.cookie('auth_session', resp.tokens?.refreshToken, {
+    res.cookie('auth_session', resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
-      maxAge: resp.tokens?.refreshTokenMaxAge,
+      maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',
       httpOnly: true,
       sameSite: 'lax',

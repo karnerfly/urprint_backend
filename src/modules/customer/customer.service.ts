@@ -34,7 +34,7 @@ export class CustomerService {
     }
 
     const customerToken = getRandomHex(16);
-    const tempCode = getRandomCode(8);
+    const tempCode = getRandomCode(6);
 
     await this.database.shop.update({
       where: {
@@ -157,7 +157,7 @@ export class CustomerService {
     };
   }
 
-  async markAsDeleted(customerToken: string): Promise<string> {
+  async deleteUpload(customerToken: string): Promise<string> {
     const documents = await this.database.document.findMany({
       where: {
         upload: {

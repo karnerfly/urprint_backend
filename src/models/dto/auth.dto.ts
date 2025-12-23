@@ -11,7 +11,7 @@ export class UTokenResponse {
   shopId: string;
   shopName: string;
   uploadToken: string;
-  tokens: Tokens | null;
+  tokens: Tokens;
   createdAt: Date;
   updatedAt: Date;
 }
