@@ -81,7 +81,7 @@ export class ShopService {
 
     if (!record) {
       throw new ServiceUnavailableException(
-        'Can not delete owner at this moment',
+        'Cannot delete owner at this moment',
       );
     }
 
@@ -119,7 +119,7 @@ export class ShopService {
 
     if (!result.location) {
       throw new ServiceUnavailableException(
-        'Can not update shop location at this moment',
+        'Cannot update shop location at this moment',
       );
     }
 
@@ -159,7 +159,7 @@ export class ShopService {
 
     if (!result || !result.location) {
       throw new ServiceUnavailableException(
-        'Can not delete shop location at this moment',
+        'Cannot delete shop location at this moment',
       );
     }
 

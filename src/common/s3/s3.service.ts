@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -56,6 +57,15 @@ export class S3Service {
       {
         expiresIn: this.config.R2_READ_URL_EXPIRY_SECONDS,
       },
+    );
+  }
+
+  async deleteFile(key: string) {
+    return await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      }),
     );
   }
 }

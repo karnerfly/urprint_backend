@@ -158,6 +158,39 @@ export class CustomerService {
   }
 
   async markAsDeleted(customerToken: string): Promise<string> {
+    const documents = await this.database.document.findMany({
+      where: {
+        upload: {
+          customerToken,
+          completed: true,
+          deleted: false,
+        },
+      },
+      select: {
+        name: true,
+        upload: {
+          select: {
+            code: true,
+            shop: {
+              select: {
+                uploadToken: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (documents.length == 0) {
+      throw new BadRequestException('Invalid request');
+    }
+
+    for (const doc of documents) {
+      const codeHash = getHash(doc.upload.code, customerToken);
+      const key = `uploads/${doc.upload.shop.uploadToken}/${codeHash}/${doc.name}`;
+      await this.s3.deleteFile(key);
+    }
+
     const result = await this.database.upload.updateManyAndReturn({
       where: {
         customerToken,
