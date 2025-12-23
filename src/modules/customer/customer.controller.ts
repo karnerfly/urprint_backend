@@ -11,6 +11,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import {
@@ -21,9 +22,10 @@ import {
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
 import type { Response, Request } from 'express';
-import { ApiQuery } from '@nestjs/swagger';
+import { ApiQuery, ApiSecurity } from '@nestjs/swagger';
 import { CONFIG_NAME } from 'src/common/config';
 import type { AppConfig } from 'src/common/config';
+import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
 
 @Controller('customer')
 export class CustomerController {
@@ -62,6 +64,8 @@ export class CustomerController {
     name: 'customerToken',
     required: false,
   })
+  @ApiSecurity('csrf')
+  @UseGuards(CsrfGuard)
   async getUploadCode(
     @Req() req: Request,
     @Query('customerToken') customerToken: string | null,
@@ -79,6 +83,8 @@ export class CustomerController {
 
   @HttpCode(200)
   @Post('complete-upload')
+  @ApiSecurity('csrf')
+  @UseGuards(CsrfGuard)
   async completeUpload(
     @Body() dto: CompleteUploadDto,
     @Req() req: Request,
@@ -95,20 +101,26 @@ export class CustomerController {
   }
 
   @Delete('upload')
-  async markAsDeleted(
-    @Body() dto: CustomerTokenDto,
+  @ApiQuery({
+    name: 'customerToken',
+    required: false,
+  })
+  @ApiSecurity('csrf')
+  @UseGuards(CsrfGuard)
+  async delete(
+    @Query('customerToken') customerToken: string | null,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<MarkAsDeleteResponse> {
-    if (!dto.customerToken) {
-      dto.customerToken = req.cookies['customer.token'] as string;
+    if (!customerToken) {
+      customerToken = req.cookies['customer.token'] as string;
     }
 
-    if (!dto.customerToken) {
+    if (!customerToken) {
       throw new BadRequestException('Invalid customer token');
     }
 
-    const id = await this.customerService.markAsDeleted(dto.customerToken);
+    const id = await this.customerService.markAsDeleted(customerToken);
 
     res.cookie('customer.token', '', {
       domain: this.config.GetWildCardDomain(),
