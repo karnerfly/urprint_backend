@@ -4,7 +4,7 @@
   "description": "",
   "author": "",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "pnpm prisma generate && pnpm prisma migrate deploy && pnpm build:app",
     "build:app": "nest build",
