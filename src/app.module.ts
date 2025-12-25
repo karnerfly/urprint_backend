@@ -13,17 +13,17 @@ import { MasterdataModule } from './modules/masterdata/masterdata.module';
 import { JwtModule } from '@nestjs/jwt';
 import { CustomerModule } from './modules/customer/customer.module';
 import { S3Module } from './common/s3/s3.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { TaskModule } from './common/task/task.module';
 import { AppConfigModule } from './common/config/config.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CsrfMiddleware } from './common/middlewares/csrf.middleware';
+import { CronModule } from './modules/cron/cron.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: '.env' }),
     AppConfigModule,
-    ScheduleModule.forRoot(),
+    CronModule,
     ThrottlerModule.forRoot({
       throttlers: [
         {

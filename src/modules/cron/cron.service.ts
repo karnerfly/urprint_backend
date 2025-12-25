@@ -1,16 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { DatabaseService } from '../database/database.service';
+import { DatabaseService } from 'src/common/database/database.service';
 
 @Injectable()
-export class TaskService {
+export class CronService {
   private logger: Logger;
 
   constructor(private database: DatabaseService) {
-    this.logger = new Logger(TaskService.name);
+    this.logger = new Logger(CronService.name);
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
   async deleteStaleUploads() {
     try {
       this.logger.log('Start to delete expired or deleted uploads...');
@@ -32,7 +30,6 @@ export class TaskService {
     }
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
   async deleteStaleRefreshToken() {
     try {
       this.logger.log('Start to delete expired refresh tokens...');

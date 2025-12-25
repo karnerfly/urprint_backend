@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "crons": [
+    {
+      "path": "/api/v1/cron/daily-midnight?token=ad5eb8fda001b0ba2c85a058460b088e5066daa11a8040ba07868ba614d00a00",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",

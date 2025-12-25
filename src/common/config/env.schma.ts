@@ -22,6 +22,9 @@ export const EnvSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string(),
   R2_UPLOAD_URL_EXPIRY_SECONDS: z.coerce.number().positive(),
   R2_READ_URL_EXPIRY_SECONDS: z.coerce.number().positive(),
+
+  CRON_MIDNIGHT_TOKEN: z.string(),
+  CRON_SECRET_KEY: z.string(),
 });
 
 export type Config = z.infer<typeof EnvSchema>;
