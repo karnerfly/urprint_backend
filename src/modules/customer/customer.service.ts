@@ -10,6 +10,7 @@ import {
   UploadCodeResponse,
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
+import mime from 'src/common/utils/mime';
 
 @Injectable()
 export class CustomerService {
@@ -23,6 +24,10 @@ export class CustomerService {
     uploadToken: string,
     fileNames: string[],
   ): Promise<UploadLinkResponse> {
+    if (fileNames.some((v) => !mime.lookup(v))) {
+      throw new BadRequestException('Invalid file type');
+    }
+
     const shop = await this.database.shop.findUnique({
       where: {
         uploadToken,
@@ -62,7 +67,8 @@ export class CustomerService {
 
     for (const fileName of fileNames) {
       const key = `uploads/${uploadToken}/${codeHash}/${fileName}`;
-      const url = await this.s3.generateUploadPresignedUrl(key);
+      const contentType = mime.lookup(key);
+      const url = await this.s3.generateUploadPresignedUrl(key, contentType);
       result.bucket.push({
         fileName,
         key,
