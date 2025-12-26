@@ -54,8 +54,8 @@ export class S3Service {
       new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key,
-        ResponseContentType: 'application/octet-stream',
-        ResponseContentDisposition: 'attachment',
+        // ResponseContentType: 'application/octet-stream',
+        // ResponseContentDisposition: 'attachment',
       }),
       {
         expiresIn: this.config.R2_READ_URL_EXPIRY_SECONDS,
