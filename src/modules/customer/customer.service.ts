@@ -25,7 +25,7 @@ export class CustomerService {
     fileNames: string[],
   ): Promise<UploadLinkResponse> {
     if (fileNames.some((v) => !mime.lookup(v))) {
-      throw new BadRequestException('Invalid file type');
+      throw new BadRequestException('Some file types are not supported');
     }
 
     const shop = await this.database.shop.findUnique({
