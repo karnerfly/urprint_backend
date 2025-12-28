@@ -21,7 +21,7 @@ export const EnvSchema = z.object({
   R2_ACCESS_KEY_ID: z.string(),
   R2_SECRET_ACCESS_KEY: z.string(),
   R2_UPLOAD_URL_EXPIRY_SECONDS: z.coerce.number().positive(),
-  R1_UPLOAD_MAX_FILE_BYTES: z.coerce.number(),
+  R2_UPLOAD_MAX_FILE_BYTES: z.coerce.number(),
   R2_READ_URL_EXPIRY_SECONDS: z.coerce.number().positive(),
 
   CRON_MIDNIGHT_TOKEN: z.string(),
