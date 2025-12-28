@@ -28,20 +28,10 @@ export class CustomerService {
       throw new BadRequestException('Some file types are not supported');
     }
 
-    const shop = await this.database.shop.findUnique({
-      where: {
-        uploadToken,
-      },
-    });
-
-    if (!shop) {
-      throw new BadRequestException('Invalid upload token');
-    }
-
     const customerToken = getRandomHex(16);
     const tempCode = getRandomCode(6);
 
-    await this.database.shop.update({
+    const shop = await this.database.shop.update({
       where: {
         uploadToken,
       },
@@ -55,6 +45,9 @@ export class CustomerService {
             customerToken,
           },
         },
+      },
+      select: {
+        id: true,
       },
     });
 
