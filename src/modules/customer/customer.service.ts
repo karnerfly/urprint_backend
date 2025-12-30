@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/common/database/database.service';
 import { Prisma } from 'src/common/database/generated/client';
 import { S3Service } from 'src/common/s3/s3.service';
@@ -7,25 +7,36 @@ import { getRandomCode, getRandomHex } from 'src/common/utils/random';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import {
   CompleteUploadDto,
+  GenerateUploadLinkDto,
   UploadCodeResponse,
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
 import mime from 'src/common/utils/mime';
+import { CONFIG_NAME } from 'src/common/config';
+import type { AppConfig } from 'src/common/config';
 
 @Injectable()
 export class CustomerService {
   constructor(
+    @Inject(CONFIG_NAME) private config: AppConfig,
     private database: DatabaseService,
     private s3: S3Service,
     private snowflake: Snowflake,
   ) {}
 
-  async getUploadLink(
-    uploadToken: string,
-    fileNames: string[],
+  async generateUploadLink(
+    dto: GenerateUploadLinkDto,
   ): Promise<UploadLinkResponse> {
-    if (fileNames.some((v) => !mime.lookup(v))) {
+    if (dto.files.some((v) => !mime.lookup(v.contentType))) {
       throw new BadRequestException('Some file types are not supported');
+    }
+
+    if (
+      dto.files.some(
+        (v) => v.contentLength > this.config.R2_UPLOAD_MAX_FILE_BYTES,
+      )
+    ) {
+      throw new BadRequestException('Max file size exceed');
     }
 
     const customerToken = getRandomHex(16);
@@ -33,7 +44,7 @@ export class CustomerService {
 
     const shop = await this.database.shop.update({
       where: {
-        uploadToken,
+        uploadToken: dto.uploadToken,
       },
       data: {
         uploads: {
@@ -58,13 +69,18 @@ export class CustomerService {
       bucket: [],
     };
 
-    for (const fileName of fileNames) {
-      const key = `uploads/${uploadToken}/${codeHash}/${fileName}`;
-      const contentType = mime.lookup(key);
-      const url = await this.s3.generateUploadPresignedUrl(key, contentType);
-      result.bucket.push({
-        fileName,
+    for (const file of dto.files) {
+      const key = `uploads/${dto.uploadToken}/${codeHash}/${file.name}`;
+      const url = await this.s3.generateUploadPresignedUrl({
         key,
+        contentType: file.contentType,
+        contentLength: file.contentLength,
+      });
+      result.bucket.push({
+        key,
+        fileName: file.name,
+        contentType: file.contentType,
+        contentLength: file.contentLength,
         uploadLink: url,
       });
     }

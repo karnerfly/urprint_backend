@@ -19,9 +19,11 @@ export class UploadLinkResponse {
   shopId: string;
   customerToken: string;
   bucket: {
-    fileName: string;
-    uploadLink: string;
     key: string;
+    fileName: string;
+    contentType: string;
+    contentLength: number;
+    uploadLink: string;
   }[];
 }
 
@@ -85,6 +87,36 @@ export class DocumentDto {
   @IsIn(['SINGLE', 'BOTH'], { message: 'invalid side mode' })
   @IsNotEmpty({ message: 'cannot be empty' })
   sideMode: SideMode;
+}
+
+export class GenerateUploadLinkDto {
+  @IsString({ message: 'must be a string' })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  uploadToken: string;
+
+  @IsArray({ message: 'must be an array' })
+  @ArrayMinSize(1, { message: 'at least one document required' })
+  @ArrayMaxSize(20, { message: 'max 20 documents are supported' })
+  @ValidateNested({ each: true })
+  @Type(() => FileDto)
+  files: FileDto[];
+}
+
+export class FileDto {
+  @IsString({ message: 'must be a string' })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  name: string;
+
+  @IsString({ message: 'must be a string' })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  contentType: string;
+
+  @IsNumber(
+    { allowInfinity: false, allowNaN: false, maxDecimalPlaces: 0 },
+    { message: 'must be a number' },
+  )
+  @IsNotEmpty({ message: 'cannot be empty' })
+  contentLength: number;
 }
 
 export class UploadCodeResponse {

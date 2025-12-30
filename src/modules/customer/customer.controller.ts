@@ -17,6 +17,7 @@ import { CustomerService } from './customer.service';
 import {
   CompleteUploadDto,
   DeleteUploadResponse,
+  GenerateUploadLinkDto,
   UploadCodeResponse,
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
@@ -33,20 +34,12 @@ export class CustomerController {
     @Inject(CONFIG_NAME) private config: AppConfig,
   ) {}
 
-  @Get('upload-link')
-  async getUploadLink(
-    @Query('uploadToken') uploadToken: string,
-    @Query(
-      'files',
-      new ParseArrayPipe({
-        items: String,
-        optional: true,
-      }),
-    )
-    files: string[],
+  @Post('generate-link')
+  async generateUploadLink(
+    @Body() dto: GenerateUploadLinkDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<UploadLinkResponse> {
-    const resp = await this.customerService.getUploadLink(uploadToken, files);
+    const resp = await this.customerService.generateUploadLink(dto);
 
     res.cookie('customer.token', resp.customerToken, {
       domain: this.config.GetWildCardDomain(),

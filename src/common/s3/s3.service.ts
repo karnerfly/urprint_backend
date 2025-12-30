@@ -34,13 +34,22 @@ export class S3Service {
     });
   }
 
-  async generateUploadPresignedUrl(key: string, contentType?: string) {
+  async generateUploadPresignedUrl({
+    key,
+    contentType,
+    contentLength,
+  }: {
+    key: string;
+    contentType: string;
+    contentLength: number;
+  }) {
     return await getSignedUrl(
       this.client,
       new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
         ContentType: contentType,
+        ContentLength: contentLength,
       }),
       {
         expiresIn: this.config.R2_UPLOAD_URL_EXPIRY_SECONDS,

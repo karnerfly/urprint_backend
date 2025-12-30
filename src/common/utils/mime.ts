@@ -4,12 +4,12 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/rtf',
   'application/vnd.oasis.opendocument.text',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'text/csv',
-  'application/vnd.oasis.opendocument.spreadsheet',
+  // 'application/rtf',
+  // 'application/vnd.ms-excel',
+  // 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  // 'text/csv',
+  // 'application/vnd.oasis.opendocument.spreadsheet',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.oasis.opendocument.presentation',
@@ -24,8 +24,8 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 class Mime {
-  lookup(key: string) {
-    return ALLOWED_MIME_TYPES.find((t) => t === _mime.lookup(key) || undefined);
+  lookup(contentType: string) {
+    return ALLOWED_MIME_TYPES.find((t) => t === contentType);
   }
 }
 
