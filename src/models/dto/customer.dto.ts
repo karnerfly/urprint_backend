@@ -45,7 +45,7 @@ export class CompleteUploadDto {
   )
   @IsNotEmpty({ message: 'can not be empty' })
   @Min(5, { message: 'at least 5 minutes expiry is required' })
-  @Max(1140, { message: 'max 1140 minutes is supported' })
+  @Max(1440, { message: 'max 1440 minutes is supported' })
   expireInMinute: number;
 
   @IsArray({ message: 'must be an array' })
