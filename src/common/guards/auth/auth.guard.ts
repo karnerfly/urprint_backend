@@ -42,12 +42,13 @@ export class AuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<JWTPayload>(token, {
         secret: this.config.JWT_SECRET,
       });
+
       request['tokenData'] = payload;
+
+      return true;
     } catch {
       throw new UnauthorizedException();
     }
-
-    return true;
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {

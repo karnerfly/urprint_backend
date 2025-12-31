@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  RequestMethod,
 } from '@nestjs/common';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import type { Request } from 'express';
@@ -14,6 +15,15 @@ export class CsrfGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
+
+    if (
+      req.method == RequestMethod.GET.toString() ||
+      req.method == RequestMethod.HEAD.toString() ||
+      req.method == RequestMethod.OPTIONS.toString()
+    ) {
+      return true;
+    }
+
     const csrfHeader = req.headers[this.config.CSRF_HEADER_NAME];
     const csrfCookie = req.cookies['csrf_token'] as string;
 

@@ -24,6 +24,7 @@ import { TokenData } from 'src/common/decorators/token.decorator';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
 import { getRandomHex } from 'src/common/utils/random';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -78,6 +79,12 @@ export class AuthController {
 
   @HttpCode(200)
   @Post('refresh/tokens')
+  @Throttle({
+    default: {
+      ttl: 60000,
+      limit: 30,
+    },
+  })
   @ApiSecurity('csrf')
   @UseGuards(CsrfGuard)
   async refreshTokens(

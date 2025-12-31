@@ -14,11 +14,13 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { S3Module } from './common/s3/s3.module';
 import { TaskModule } from './common/task/task.module';
 import { AppConfigModule } from './common/config/config.module';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AuthThrottlerGuard } from './common/guards/auth/throttler.guard';
 import { CsrfMiddleware } from './common/middlewares/csrf.middleware';
 import { CronModule } from './modules/cron/cron.module';
 import { OtpModule } from './modules/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DeviceIdMiddleware } from './common/middlewares/device_id.middleware';
 
 @Module({
   imports: [
@@ -52,7 +54,7 @@ import { AuthModule } from './modules/auth/auth.module';
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: AuthThrottlerGuard,
     },
   ],
 })
@@ -61,6 +63,8 @@ export class AppModule implements NestModule {
     consumer
       .apply(CsrfMiddleware)
       .exclude({ path: '/auth/csrf', method: RequestMethod.GET })
-      .forRoutes('*path');
+      .forRoutes('*csrf');
+
+    consumer.apply(DeviceIdMiddleware).forRoutes('*deviceId');
   }
 }
