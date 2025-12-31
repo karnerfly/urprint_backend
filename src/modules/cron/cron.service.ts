@@ -5,7 +5,7 @@ import { DatabaseService } from 'src/common/database/database.service';
 export class CronService {
   private logger: Logger;
 
-  constructor(private database: DatabaseService) {
+  constructor(private readonly database: DatabaseService) {
     this.logger = new Logger(CronService.name);
   }
 

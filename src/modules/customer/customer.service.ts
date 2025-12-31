@@ -12,16 +12,15 @@ import {
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
 import mime from 'src/common/utils/mime';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 
 @Injectable()
 export class CustomerService {
   constructor(
-    @Inject(CONFIG_NAME) private config: AppConfig,
-    private database: DatabaseService,
-    private s3: S3Service,
-    private snowflake: Snowflake,
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
+    private readonly database: DatabaseService,
+    private readonly s3: S3Service,
+    private readonly snowflake: Snowflake,
   ) {}
 
   async generateUploadLink(

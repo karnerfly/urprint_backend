@@ -68,9 +68,6 @@ importers:
       helmet:
         specifier: ^8.1.0
         version: 8.1.0
-      mime-types:
-        specifier: ^3.0.2
-        version: 3.0.2
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -111,9 +108,6 @@ importers:
       '@types/jest':
         specifier: ^30.0.0
         version: 30.0.0
-      '@types/mime-types':
-        specifier: ^3.0.1
-        version: 3.0.1
       '@types/node':
         specifier: ^22.10.7
         version: 22.19.3
@@ -1485,9 +1479,6 @@ packages:
 
   '@types/methods@1.1.4':
     resolution: {integrity: sha512-ymXWVrDiCxTBE3+RIrrP533E70eA+9qu7zdWoHuOmGujkYtzf4HQF96b8nwHLqhuf4ykX61IGRIB38CC6/sImQ==}
-
-  '@types/mime-types@3.0.1':
-    resolution: {integrity: sha512-xRMsfuQbnRq1Ef+C+RKaENOxXX87Ygl38W1vDfPHRku02TgQr+Qd8iivLtAMcR0KF5/29xlnFihkTlbqFrGOVQ==}
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
@@ -6044,8 +6035,6 @@ snapshots:
   '@types/luxon@3.7.1': {}
 
   '@types/methods@1.1.4': {}
-
-  '@types/mime-types@3.0.1': {}
 
   '@types/ms@2.1.0': {}
 

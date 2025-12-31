@@ -4,19 +4,17 @@ import {
   Get,
   HttpCode,
   Inject,
-  Post,
   Query,
 } from '@nestjs/common';
 import { CronService } from './cron.service';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { getHash } from 'src/common/utils/hash';
 
 @Controller('cron')
 export class CronController {
   constructor(
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly cronService: CronService,
-    @Inject(CONFIG_NAME) private config: AppConfig,
   ) {}
 
   @HttpCode(204)

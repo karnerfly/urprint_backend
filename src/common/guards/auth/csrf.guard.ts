@@ -5,13 +5,13 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import type { Request } from 'express';
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  constructor(@Inject(CONFIG_NAME) private config: AppConfig) {}
+  constructor(@Inject(CONFIG_NAME) private readonly config: AppConfig) {}
+
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
     const csrfHeader = req.headers[this.config.CSRF_HEADER_NAME];

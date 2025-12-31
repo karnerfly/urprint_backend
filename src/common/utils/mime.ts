@@ -1,5 +1,3 @@
-import _mime from 'mime-types';
-
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',

@@ -13,7 +13,8 @@ import { Prisma } from 'src/common/database/generated/client';
 
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class DatabaseExceptionFilter implements ExceptionFilter {
-  constructor(private httpAdapterHost: HttpAdapterHost) {}
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
     const { httpAdapter } = this.httpAdapterHost;
     let finalException: HttpException;

@@ -27,10 +27,10 @@ import { getHash } from 'src/common/utils/hash';
 @Injectable()
 export class ShopService {
   constructor(
-    private database: DatabaseService,
-    private authService: AuthService,
-    private snowflake: Snowflake,
-    private s3: S3Service,
+    private readonly database: DatabaseService,
+    private readonly authService: AuthService,
+    private readonly snowflake: Snowflake,
+    private readonly s3: S3Service,
   ) {}
 
   async createOwner(dto: CreateShopDto): Promise<UTokenResponse> {

@@ -21,16 +21,15 @@ import type { Request, Response } from 'express';
 import { AuthGuard } from 'src/common/guards/auth/auth.guard';
 import { ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
 import { TokenData } from 'src/common/decorators/token.decorator';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
 import { getRandomHex } from 'src/common/utils/random';
 
 @Controller('auth')
 export class AuthController {
   constructor(
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly authService: AuthService,
-    @Inject(CONFIG_NAME) private config: AppConfig,
   ) {}
 
   @HttpCode(200)

@@ -12,8 +12,8 @@ export class TaskService implements OnModuleInit {
   private logger: Logger;
 
   constructor(
-    @InjectQueue('email') private emailQueue: Queue,
-    @InjectQueue('sms') private smsQueue: Queue, // not in use
+    @InjectQueue('email') private readonly emailQueue: Queue,
+    @InjectQueue('sms') private readonly smsQueue: Queue, // not in use
   ) {
     this.logger = new Logger(TaskService.name);
   }

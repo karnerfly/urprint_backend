@@ -19,7 +19,6 @@ import {
   CreateShopDto,
   DeleteLocationsResponse,
   DeleteOwnerResponse,
-  DeletePhoneNumberDto,
   DeletePhoneNumberResponse,
   PhoneNumberResponse,
   ShopLocationResponse,
@@ -33,15 +32,14 @@ import { AuthGuard, Public } from 'src/common/guards/auth/auth.guard';
 import { TokenData } from 'src/common/decorators/token.decorator';
 import type { JWTPayload } from 'src/models/dto/auth.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 
 @UseGuards(AuthGuard)
 @Controller('shop')
 export class ShopController {
   constructor(
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly shopService: ShopService,
-    @Inject(CONFIG_NAME) private config: AppConfig,
   ) {}
 
   @Post('owner')

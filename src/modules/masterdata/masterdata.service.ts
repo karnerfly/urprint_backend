@@ -9,7 +9,7 @@ import {
 
 @Injectable()
 export class MasterdataService {
-  constructor(private database: DatabaseService) {}
+  constructor(private readonly database: DatabaseService) {}
 
   async getAllMasterdata(): Promise<GlobalMasterDataResponse> {
     const uploadExpirations = await this.database.uploadExpiration.findMany();

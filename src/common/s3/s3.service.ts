@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Inject, Injectable } from '@nestjs/common';
-import { CONFIG_NAME, type Config } from '../config';
+import { type AppConfig, CONFIG_NAME } from '../config';
 
 @Injectable()
 export class S3Service {
@@ -17,7 +17,7 @@ export class S3Service {
   private accessKeyId: string;
   private secretAccessKey: string;
 
-  constructor(@Inject(CONFIG_NAME) private config: Config) {
+  constructor(@Inject(CONFIG_NAME) private readonly config: AppConfig) {
     this.region = config.R2_REGION;
     this.bucketName = config.R2_BUCKET_NAME;
     this.accountId = config.R2_ACCOUNT_ID;

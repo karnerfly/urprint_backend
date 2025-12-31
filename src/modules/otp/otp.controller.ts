@@ -9,13 +9,12 @@ import {
   VerifyOtpResponse,
 } from 'src/models/dto/otp.dto';
 import type { Response } from 'express';
-import type { AppConfig } from 'src/common/config';
-import { CONFIG_NAME } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 
 @Controller('otp')
 export class OtpController {
   constructor(
-    @Inject(CONFIG_NAME) private config: AppConfig,
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly otpService: OtpService,
   ) {}
 

@@ -1,11 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
-  Logger,
-  ServiceUnavailableException,
 } from '@nestjs/common';
-import { CONFIG_NAME } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getHash } from 'src/common/utils/hash';
 import { getRandomCode, getRandomHex } from 'src/common/utils/random';
@@ -17,28 +16,20 @@ import {
   VerifyOtpDto,
   VerifyOtpResponse,
 } from 'src/models/dto/otp.dto';
-import type { AppConfig } from 'src/common/config';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import { JWTPayload, UTokenResponse } from 'src/models/dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
-import { InjectQueue } from '@nestjs/bullmq';
-import type { Queue } from 'bullmq';
-import { EMAIL_TASKS } from 'src/models/enums/task.enum';
-import { EMAIL_VERIFICATION_PAYLOAD } from 'src/models/task';
 import { TaskService } from 'src/common/task/task.service';
 
 @Injectable()
 export class OtpService {
-  private logger: Logger;
   constructor(
-    @Inject(CONFIG_NAME) private config: AppConfig,
-    private database: DatabaseService,
-    private jwtService: JwtService,
-    private snowflake: Snowflake,
-    private taskService: TaskService,
-  ) {
-    this.logger = new Logger(OtpService.name);
-  }
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
+    private readonly database: DatabaseService,
+    private readonly jwtService: JwtService,
+    private readonly snowflake: Snowflake,
+    private readonly taskService: TaskService,
+  ) {}
 
   async generate(dto: GenerateOtpDto): Promise<GenerateOtpResponse> {
     const record = await this.database.otp.findFirst({
@@ -80,7 +71,7 @@ export class OtpService {
 
     // NOTE: only support email for now
     if (record.medium === 'EMAIL') {
-      this.taskService.SendEmailVerificationMail({
+      await this.taskService.SendEmailVerificationMail({
         name: updated.owner.name,
         identity: updated.mediumIdentity,
         otp,
@@ -145,7 +136,7 @@ export class OtpService {
 
     // NOTE: only support email for now
     if (record.medium === 'EMAIL') {
-      this.taskService.SendEmailVerificationMail({
+      await this.taskService.SendEmailVerificationMail({
         name: updated.owner.name,
         identity: updated.mediumIdentity,
         otp,
@@ -259,10 +250,6 @@ export class OtpService {
       throw new BadRequestException('Invalid request');
     }
 
-    if (record.ackRequired) {
-      throw new ServiceUnavailableException('Otp misconfiguration');
-    }
-
     if (record.failedCount >= record.maxFailed) {
       throw new BadRequestException('Max failed reached');
     }
@@ -314,7 +301,7 @@ export class OtpService {
     });
 
     if (!updated.owner.shop) {
-      throw new BadRequestException('Invalid request');
+      throw new ForbiddenException('Owner does not have any shop');
     }
 
     const accessTokenExpireAt = new Date(

@@ -6,7 +6,6 @@ import {
   Get,
   HttpCode,
   Inject,
-  ParseArrayPipe,
   Post,
   Query,
   Req,
@@ -23,15 +22,14 @@ import {
 } from 'src/models/dto/customer.dto';
 import type { Response, Request } from 'express';
 import { ApiQuery, ApiSecurity } from '@nestjs/swagger';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
 
 @Controller('customer')
 export class CustomerController {
   constructor(
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly customerService: CustomerService,
-    @Inject(CONFIG_NAME) private config: AppConfig,
   ) {}
 
   @Post('generate-link')

@@ -6,18 +6,17 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
-import { CONFIG_NAME } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getRandomHex } from 'src/common/utils/random';
 import { JWTPayload, LoginDto, UTokenResponse } from 'src/models/dto/auth.dto';
-import type { Config } from 'src/common/config';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(CONFIG_NAME) private config: Config,
-    private database: DatabaseService,
-    private jwtService: JwtService,
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
+    private readonly database: DatabaseService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async login(dto: LoginDto): Promise<UTokenResponse> {

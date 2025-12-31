@@ -12,14 +12,20 @@ interface FieldError {
   errors: string[];
 }
 
+type ClassConstructor<T = unknown> = new (...args: unknown[]) => T;
+
 @Injectable()
 export class ValidationPipe implements PipeTransform {
-  async transform(value: any, { metatype }: ArgumentMetadata) {
+  async transform<T extends object>(
+    value: unknown,
+    { metatype }: ArgumentMetadata,
+  ): Promise<T> {
     if (!metatype || !this.shouldValidate(metatype)) {
-      return value;
+      return value as T;
     }
 
-    const object = plainToInstance(metatype, value);
+    const object = plainToInstance(metatype as ClassConstructor<T>, value);
+
     const errors = await validate(object, {
       whitelist: true,
       forbidNonWhitelisted: true,
@@ -37,11 +43,18 @@ export class ValidationPipe implements PipeTransform {
       });
     }
 
-    return value;
+    return object;
   }
 
-  private shouldValidate(metatype: Function): boolean {
-    const primitives: Function[] = [String, Boolean, Number, Array, Object];
+  private shouldValidate(metatype: ClassConstructor): boolean {
+    const primitives: readonly ClassConstructor[] = [
+      String,
+      Boolean,
+      Number,
+      Array,
+      Object,
+    ];
+
     return !primitives.includes(metatype);
   }
 
@@ -74,6 +87,6 @@ export class ValidationPipe implements PipeTransform {
   }
 
   private isNumeric(value: string): boolean {
-    return !isNaN(Number(value));
+    return !Number.isNaN(Number(value));
   }
 }

@@ -1,8 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { CONFIG_NAME } from 'src/common/config';
-import type { AppConfig } from 'src/common/config';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { EMAIL_TASKS } from 'src/models/enums/task.enum';
 import {
   EMAIL_VERIFICATION_PAYLOAD,
@@ -15,13 +14,13 @@ export class EmailConsumer extends WorkerHost {
   private logger: Logger;
   private client: Resend;
 
-  constructor(@Inject(CONFIG_NAME) private config: AppConfig) {
+  constructor(@Inject(CONFIG_NAME) private readonly config: AppConfig) {
     super();
     this.logger = new Logger(EmailConsumer.name);
     this.client = new Resend(this.config.RESEND_API_KEY);
   }
 
-  async process(job: Job, token?: string): Promise<any> {
+  async process(job: Job): Promise<any> {
     this.logger.log('Background process started');
 
     switch (job.name) {
