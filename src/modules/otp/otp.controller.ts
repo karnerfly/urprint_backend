@@ -10,6 +10,7 @@ import {
 } from 'src/models/dto/otp.dto';
 import type { Response } from 'express';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
+import NAMES from 'src/constants/name';
 
 @Controller('otp')
 export class OtpController {
@@ -44,7 +45,7 @@ export class OtpController {
   ) {
     const resp = await this.otpService.verifyAndGenerateTokens(dto);
 
-    res.cookie('auth_session', resp.tokens.refreshToken, {
+    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
       maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',

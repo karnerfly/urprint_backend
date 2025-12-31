@@ -9,8 +9,6 @@ export const EnvSchema = z.object({
 
   DATABASE_URL: z.url(),
 
-  CSRF_HEADER_NAME: z.string(),
-
   JWT_SECRET: z.string().min(32),
   ACCESS_TOKEN_MAX_AGE_SECOND: z.coerce.number().int().positive(),
   REFRESH_TOKEN_MAX_AGE_SECOND: z.coerce.number().int().positive(),

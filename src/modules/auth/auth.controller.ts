@@ -23,8 +23,9 @@ import { ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
 import { TokenData } from 'src/common/decorators/token.decorator';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
-import { getRandomHex } from 'src/common/utils/random';
+import { getRandomBase64Url } from 'src/common/utils/random';
 import { Throttle } from '@nestjs/throttler';
+import NAMES from 'src/constants/name';
 
 @Controller('auth')
 export class AuthController {
@@ -41,7 +42,7 @@ export class AuthController {
   ): Promise<UTokenResponse> {
     const resp = await this.authService.login(dto);
 
-    res.cookie('auth_session', resp.tokens.refreshToken, {
+    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
       maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',
@@ -57,11 +58,11 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): CsrfResponse {
-    let csrfToken = req.cookies['csrf_token'] as string;
+    let csrfToken = req.cookies[NAMES.COOKIE.CSRF_TOKEN] as string;
 
     if (!csrfToken) {
-      csrfToken = getRandomHex(32);
-      res.cookie('csrf_token', csrfToken, {
+      csrfToken = getRandomBase64Url(32);
+      res.cookie(NAMES.COOKIE.CSRF_TOKEN, csrfToken, {
         domain: this.config.GetWildCardDomain(),
         httpOnly: false,
         path: '/',
@@ -71,8 +72,8 @@ export class AuthController {
     }
 
     return {
-      cookieName: 'csrf_token',
-      headerName: this.config.CSRF_HEADER_NAME,
+      cookieName: NAMES.COOKIE.CSRF_TOKEN,
+      headerName: NAMES.HEADER.CSRF_TOKEN,
       value: csrfToken,
     };
   }
@@ -91,7 +92,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<UTokenResponse> {
-    const refreshTokenCookie = req.cookies['auth_session'] as string;
+    const refreshTokenCookie = req.cookies[NAMES.COOKIE.AUTH_SESSION] as string;
 
     if (!refreshTokenCookie) {
       throw new ForbiddenException('Invalid request');
@@ -99,7 +100,7 @@ export class AuthController {
 
     const resp = await this.authService.refreshTokens(refreshTokenCookie);
 
-    res.cookie('auth_session', resp.tokens.refreshToken, {
+    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
       maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',
@@ -120,7 +121,7 @@ export class AuthController {
   ): Promise<LogoutResponse> {
     await this.authService.logout(tokenData.ownerId);
 
-    res.cookie('auth_session', '', {
+    res.cookie(NAMES.COOKIE.AUTH_SESSION, '', {
       domain: this.config.GetWildCardDomain(),
       path: '/',
       maxAge: -1,

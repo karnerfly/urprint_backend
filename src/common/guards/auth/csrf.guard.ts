@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import type { Request } from 'express';
+import NAMES from 'src/constants/name';
 
 @Injectable()
 export class CsrfGuard implements CanActivate {
@@ -24,8 +25,8 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
-    const csrfHeader = req.headers[this.config.CSRF_HEADER_NAME];
-    const csrfCookie = req.cookies['csrf_token'] as string;
+    const csrfHeader = req.headers[NAMES.HEADER.CSRF_TOKEN];
+    const csrfCookie = req.cookies[NAMES.COOKIE.CSRF_TOKEN] as string;
 
     if (!csrfHeader || !csrfCookie) {
       throw new ForbiddenException('Invalid csrf token');

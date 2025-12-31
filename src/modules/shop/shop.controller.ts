@@ -33,6 +33,7 @@ import { TokenData } from 'src/common/decorators/token.decorator';
 import type { JWTPayload } from 'src/models/dto/auth.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
+import NAMES from 'src/constants/name';
 
 @UseGuards(AuthGuard)
 @Controller('shop')
@@ -50,7 +51,7 @@ export class ShopController {
   ): Promise<UTokenResponse> {
     const resp = await this.shopService.createOwner(dto);
 
-    res.cookie('auth_session', resp.tokens.refreshToken, {
+    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
       domain: this.config.GetWildCardDomain(),
       maxAge: resp.tokens.refreshTokenMaxAge * 1000,
       path: '/',

@@ -6,6 +6,7 @@ import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import NAMES from './constants/name';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -61,7 +62,7 @@ async function bootstrap() {
     )
     .addSecurity('csrf', {
       type: 'apiKey',
-      name: process.env.CSRF_HEADER_NAME,
+      name: NAMES.HEADER.CSRF_TOKEN,
       in: 'header',
     })
     .build();

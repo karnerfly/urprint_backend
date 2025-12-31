@@ -10,6 +10,7 @@ import {
   ThrottlerRequest,
 } from '@nestjs/throttler';
 import type { Request } from 'express';
+import NAMES from 'src/constants/name';
 import { type JWTPayload } from 'src/models/dto/auth.dto';
 
 @Injectable()
@@ -22,7 +23,7 @@ export class AuthThrottlerGuard extends ThrottlerGuard {
     const req = context.switchToHttp().getRequest<Request>();
     let id = `${suffix}:${name}`;
     const token = req['tokenData'] as JWTPayload | undefined;
-    const deviceId = req.cookies['device_id'] as string | undefined;
+    const deviceId = req.cookies[NAMES.COOKIE.DEVICE_ID] as string | undefined;
 
     if (token) {
       id += `:${token.ownerId}`;

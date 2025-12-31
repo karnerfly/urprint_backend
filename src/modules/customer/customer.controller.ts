@@ -24,6 +24,7 @@ import type { Response, Request } from 'express';
 import { ApiQuery, ApiSecurity } from '@nestjs/swagger';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
+import NAMES from 'src/constants/name';
 
 @Controller('customer')
 export class CustomerController {
@@ -39,7 +40,7 @@ export class CustomerController {
   ): Promise<UploadLinkResponse> {
     const resp = await this.customerService.generateUploadLink(dto);
 
-    res.cookie('customer.token', resp.customerToken, {
+    res.cookie(NAMES.COOKIE.CUSTOMER_TOKEN, resp.customerToken, {
       domain: this.config.GetWildCardDomain(),
       maxAge: 1000 * 60 * 60 * 24,
       path: '/',
@@ -62,7 +63,7 @@ export class CustomerController {
     @Query('customerToken') customerToken: string | null,
   ): Promise<UploadCodeResponse> {
     if (!customerToken) {
-      customerToken = req.cookies['customer.token'] as string;
+      customerToken = req.cookies[NAMES.COOKIE.CUSTOMER_TOKEN] as string;
     }
 
     if (!customerToken) {
@@ -81,7 +82,7 @@ export class CustomerController {
     @Req() req: Request,
   ): Promise<UploadCodeResponse> {
     if (!dto.customerToken) {
-      dto.customerToken = req.cookies['customer.token'] as string;
+      dto.customerToken = req.cookies[NAMES.COOKIE.CUSTOMER_TOKEN] as string;
     }
 
     if (!dto.customerToken) {
@@ -104,7 +105,7 @@ export class CustomerController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<DeleteUploadResponse> {
     if (!customerToken) {
-      customerToken = req.cookies['customer.token'] as string;
+      customerToken = req.cookies[NAMES.COOKIE.CUSTOMER_TOKEN] as string;
     }
 
     if (!customerToken) {
@@ -113,7 +114,7 @@ export class CustomerController {
 
     const id = await this.customerService.deleteUpload(customerToken);
 
-    res.cookie('customer.token', '', {
+    res.cookie(NAMES.COOKIE.CUSTOMER_TOKEN, '', {
       domain: this.config.GetWildCardDomain(),
       path: '/',
       httpOnly: true,
