@@ -4,7 +4,6 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { DatabaseExceptionFilter } from './common/filters/database_exception.filter';
 import { ShopModule } from './modules/shop/shop.module';
@@ -18,12 +17,12 @@ import { AppConfigModule } from './common/config/config.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CsrfMiddleware } from './common/middlewares/csrf.middleware';
 import { CronModule } from './modules/cron/cron.module';
+import { OtpModule } from './modules/otp/otp.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ envFilePath: '.env' }),
-    AppConfigModule,
-    CronModule,
+    AppConfigModule.forRoot('.env'),
     ThrottlerModule.forRoot({
       throttlers: [
         {
@@ -37,7 +36,10 @@ import { CronModule } from './modules/cron/cron.module';
     TaskModule,
     MasterdataModule,
     ShopModule,
+    AuthModule,
     CustomerModule,
+    CronModule,
+    OtpModule,
   ],
   providers: [
     {

@@ -1,10 +1,15 @@
 import { z } from 'zod';
 import { EnvSchema, AppConfig } from './env.schma';
+import dotenv from 'dotenv';
 
 let cachedEnv: AppConfig | null = null;
 
-export function loadConfig(): AppConfig {
+export function loadConfig(paths: string | string[]): AppConfig {
   if (cachedEnv) return cachedEnv;
+
+  dotenv.config({
+    path: paths,
+  });
 
   const parsed = EnvSchema.safeParse(process.env);
 

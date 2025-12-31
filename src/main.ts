@@ -6,7 +6,6 @@ import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { getHash } from './common/utils/hash';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -79,4 +78,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap().catch((error) => console.error(error));
+bootstrap().catch((error) => console.error('APPLICATION ERROR: ', error));

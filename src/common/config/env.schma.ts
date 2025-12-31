@@ -26,6 +26,16 @@ export const EnvSchema = z.object({
 
   CRON_MIDNIGHT_TOKEN: z.string(),
   CRON_SECRET_KEY: z.string(),
+
+  RESEND_API_KEY: z.string(),
+  FROM_MAIL: z.string(),
+  OTP_EXPIRY_SECONDS: z.coerce.number(),
+  OTP_ACK_EXPIRY_SECONDS: z.coerce.number(),
+
+  REDIS_HOST: z.string(),
+  REDIS_PORT: z.coerce.number(),
+  REDIS_USERNAME: z.string().optional(),
+  REDIS_PASSWORD: z.string().optional(),
 });
 
 export type Config = z.infer<typeof EnvSchema>;

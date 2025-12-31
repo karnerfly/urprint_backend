@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "otps" ALTER COLUMN "ack_id" SET DATA TYPE TEXT,
+ALTER COLUMN "expire_at" DROP NOT NULL;
