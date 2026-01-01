@@ -31,7 +31,7 @@ export class EmailConsumer extends WorkerHost {
             from: this.config.FROM_MAIL,
             to: data.identity,
             subject: 'Email Verification',
-            text: `Hey ${data.name}, Your Open Time Password: ${data.otp}`,
+            text: `Hey ${data.name}, Your One Time Password: ${data.otp}`,
           });
         } catch (error) {
           this.logger.error('Failed to send email: ', error);
@@ -45,7 +45,7 @@ export class EmailConsumer extends WorkerHost {
             from: this.config.FROM_MAIL,
             to: data.identity,
             subject: 'Two Factor Authentication',
-            text: `Hey ${data.identity}, Your Open Time Password: ${data.otp}`,
+            text: `Hey ${data.identity}, Your One Time Password: ${data.otp}`,
           });
         } catch (error) {
           this.logger.error('Failed to send email: ', error);

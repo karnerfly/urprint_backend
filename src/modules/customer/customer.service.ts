@@ -116,7 +116,7 @@ export class CustomerService {
       },
     });
 
-    if (result.length == 0) {
+    if (result.length === 0) {
       throw new BadRequestException('Invalid request');
     }
 
@@ -196,7 +196,7 @@ export class CustomerService {
       },
     });
 
-    if (documents.length == 0) {
+    if (documents.length === 0) {
       throw new BadRequestException('Invalid request');
     }
 
@@ -223,7 +223,7 @@ export class CustomerService {
       },
     });
 
-    if (result.length == 0) {
+    if (result.length === 0) {
       throw new BadRequestException('Invalid request');
     }
 
