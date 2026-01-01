@@ -13,6 +13,22 @@ import type { Request } from 'express';
 import NAMES from 'src/constants/name';
 import { type JWTPayload } from 'src/models/dto/auth.dto';
 
+class TooManyRequestException extends HttpException {
+  constructor(objectOrError?: any, descriptionOrOptions = 'Too Many Request') {
+    const { description, httpExceptionOptions } =
+      HttpException.extractDescriptionAndOptionsFrom(descriptionOrOptions);
+    super(
+      HttpException.createBody(
+        objectOrError,
+        description ?? '',
+        HttpStatus.TOO_MANY_REQUESTS,
+      ),
+      HttpStatus.TOO_MANY_REQUESTS,
+      httpExceptionOptions,
+    );
+  }
+}
+
 @Injectable()
 export class AuthThrottlerGuard extends ThrottlerGuard {
   protected generateKey(
@@ -41,9 +57,8 @@ export class AuthThrottlerGuard extends ThrottlerGuard {
       return await super.handleRequest(requestProps);
     } catch (error) {
       if (error instanceof ThrottlerException) {
-        throw new HttpException(
-          'Too many request',
-          HttpStatus.TOO_MANY_REQUESTS,
+        throw new TooManyRequestException(
+          'Too many request, please try again later',
         );
       }
       throw error;

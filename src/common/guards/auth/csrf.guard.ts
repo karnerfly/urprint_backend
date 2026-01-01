@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
-  RequestMethod,
 } from '@nestjs/common';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import type { Request } from 'express';
@@ -16,12 +15,9 @@ export class CsrfGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
+    const method = req.method.toLocaleLowerCase();
 
-    if (
-      req.method == RequestMethod.GET.toString() ||
-      req.method == RequestMethod.HEAD.toString() ||
-      req.method == RequestMethod.OPTIONS.toString()
-    ) {
+    if (['get', 'head', 'options'].includes(method)) {
       return true;
     }
 

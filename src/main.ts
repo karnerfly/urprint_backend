@@ -17,7 +17,7 @@ async function bootstrap() {
         'Accept',
         'Content-Type',
         'Authorization',
-        'X-CSRF-Token',
+        'X-Csrf-Token',
       ],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     },
@@ -67,8 +67,17 @@ async function bootstrap() {
     })
     .build();
 
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, documentFactory, {
+  const document = SwaggerModule.createDocument(app, config);
+
+  for (const path of Object.values(document.paths)) {
+    for (const [method, operation] of Object.entries(path)) {
+      if (!['get', 'options', 'head'].includes(method.toLocaleLowerCase())) {
+        operation.security = [...(operation.security ?? []), { csrf: [] }];
+      }
+    }
+  }
+
+  SwaggerModule.setup('docs', app, document, {
     customCssUrl:
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
     customJs: [

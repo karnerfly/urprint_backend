@@ -10,7 +10,6 @@ import {
   Query,
   Req,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import {
@@ -21,9 +20,8 @@ import {
   UploadLinkResponse,
 } from 'src/models/dto/customer.dto';
 import type { Response, Request } from 'express';
-import { ApiQuery, ApiSecurity } from '@nestjs/swagger';
+import { ApiQuery } from '@nestjs/swagger';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
-import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
 import NAMES from 'src/constants/name';
 
 @Controller('customer')
@@ -56,8 +54,6 @@ export class CustomerController {
     name: 'customerToken',
     required: false,
   })
-  @ApiSecurity('csrf')
-  @UseGuards(CsrfGuard)
   async getUploadCode(
     @Req() req: Request,
     @Query('customerToken') customerToken: string | null,
@@ -75,8 +71,6 @@ export class CustomerController {
 
   @HttpCode(200)
   @Post('complete-upload')
-  @ApiSecurity('csrf')
-  @UseGuards(CsrfGuard)
   async completeUpload(
     @Body() dto: CompleteUploadDto,
     @Req() req: Request,
@@ -97,8 +91,6 @@ export class CustomerController {
     name: 'customerToken',
     required: false,
   })
-  @ApiSecurity('csrf')
-  @UseGuards(CsrfGuard)
   async delete(
     @Query('customerToken') customerToken: string | null,
     @Req() req: Request,

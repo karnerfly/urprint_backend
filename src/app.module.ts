@@ -21,6 +21,7 @@ import { CronModule } from './modules/cron/cron.module';
 import { OtpModule } from './modules/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DeviceIdMiddleware } from './common/middlewares/device_id.middleware';
+import { CsrfGuard } from './common/guards/auth/csrf.guard';
 
 @Module({
   imports: [
@@ -51,6 +52,10 @@ import { DeviceIdMiddleware } from './common/middlewares/device_id.middleware';
     {
       provide: APP_PIPE,
       useClass: ValidationPipe,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
     },
     {
       provide: APP_GUARD,

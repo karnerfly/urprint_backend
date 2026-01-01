@@ -11,6 +11,7 @@ import {
 import type { Response } from 'express';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import NAMES from 'src/constants/name';
+import { UTokenResponse } from 'src/models/dto/auth.dto';
 
 @Controller('otp')
 export class OtpController {
@@ -42,7 +43,7 @@ export class OtpController {
   async verifyAndGenerateTokens(
     @Body() dto: VerifyOtpDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<UTokenResponse> {
     const resp = await this.otpService.verifyAndGenerateTokens(dto);
 
     res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {

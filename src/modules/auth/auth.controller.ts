@@ -6,8 +6,10 @@ import {
   HttpCode,
   Inject,
   Post,
+  Query,
   Req,
   Res,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -19,10 +21,9 @@ import type {
 } from 'src/models/dto/auth.dto';
 import type { Request, Response } from 'express';
 import { AuthGuard } from 'src/common/guards/auth/auth.guard';
-import { ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { TokenData } from 'src/common/decorators/token.decorator';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
-import { CsrfGuard } from 'src/common/guards/auth/csrf.guard';
 import { getRandomBase64Url } from 'src/common/utils/random';
 import { Throttle } from '@nestjs/throttler';
 import NAMES from 'src/constants/name';
@@ -33,6 +34,16 @@ export class AuthController {
     @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly authService: AuthService,
   ) {}
+
+  @Get('email/exists')
+  async emailExists(@Query('email') email: string) {
+    throw new ServiceUnavailableException('Not implemented yet');
+  }
+
+  @Post('email/verify')
+  async verifyEmail() {
+    throw new ServiceUnavailableException('Not implemented yet');
+  }
 
   @HttpCode(200)
   @Post('login')
@@ -86,8 +97,6 @@ export class AuthController {
       limit: 30,
     },
   })
-  @ApiSecurity('csrf')
-  @UseGuards(CsrfGuard)
   async refreshTokens(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
