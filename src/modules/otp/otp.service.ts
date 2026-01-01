@@ -7,8 +7,9 @@ import {
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getHash } from 'src/common/utils/hash';
-import { getRandomCode, getRandomHex } from 'src/common/utils/random';
+import { getRandomBase64Url, getRandomCode } from 'src/common/utils/random';
 import {
+  InternalCreateRecordPayload,
   GenerateOtpDto,
   GenerateOtpResponse,
   ResendOtpDto,
@@ -17,18 +18,18 @@ import {
   VerifyOtpResponse,
 } from 'src/models/dto/otp.dto';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
-import { JWTPayload, UTokenResponse } from 'src/models/dto/auth.dto';
-import { JwtService } from '@nestjs/jwt';
+import { UTokenResponse } from 'src/models/dto/auth.dto';
 import { TaskService } from 'src/common/task/task.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class OtpService {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly database: DatabaseService,
-    private readonly jwtService: JwtService,
     private readonly snowflake: Snowflake,
     private readonly taskService: TaskService,
+    private readonly authService: AuthService,
   ) {}
 
   async generate(dto: GenerateOtpDto): Promise<GenerateOtpResponse> {
@@ -53,11 +54,11 @@ export class OtpService {
     const updated = await this.database.otp.update({
       where: {
         ownerId: dto.ownerId,
-        otpGenerated: true,
         verificationToken: dto.verificationToken,
       },
       data: {
         otpHash,
+        otpGenerated: true,
         expireAt: new Date(Date.now() + this.config.OTP_EXPIRY_SECONDS * 1000),
       },
       include: {
@@ -304,55 +305,42 @@ export class OtpService {
       throw new ForbiddenException('Owner does not have any shop');
     }
 
-    const accessTokenExpireAt = new Date(
-      Date.now() + this.config.ACCESS_TOKEN_MAX_AGE_SECOND * 1000,
-    );
-
-    const refreshTokenExpireAt = new Date(
-      Date.now() + this.config.REFRESH_TOKEN_MAX_AGE_SECOND * 1000,
-    );
-
-    const accessToken = await this.jwtService.signAsync<JWTPayload>(
-      {
-        ownerId: updated.owner.id,
-        ownerName: updated.owner.name,
-        ownerEmail: updated.owner.email,
-        verified: updated.owner.verified,
-        shopId: updated.owner.shop.id,
-        shopName: updated.owner.shop.shopName,
-        uploadToken: updated.owner.shop.uploadToken,
-      },
-      {
-        algorithm: 'HS256',
-        issuer: this.config.DOMAIN,
-        expiresIn: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
-        secret: this.config.JWT_SECRET,
-      },
-    );
-    const refreshToken = getRandomHex(32);
-
-    return {
+    return await this.authService._refreshTokens({
       ownerId: updated.ownerId,
       ownerEmail: updated.owner.email,
       ownerName: updated.owner.name,
+      verified: updated.owner.verified,
       shopId: updated.owner.shop.id,
       shopName: updated.owner.shop.shopName,
       uploadToken: updated.owner.shop.uploadToken,
-      verified: updated.owner.verified,
       otpGenerated: false,
       otpRequired: false,
       otpVerificationKey: null,
-      tokens: {
-        type: 'Bearer',
-        accessToken,
-        refreshToken,
-        accessTokenExpireAt,
-        refreshTokenExpireAt,
-        accessTokenMaxAge: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
-        refreshTokenMaxAge: this.config.REFRESH_TOKEN_MAX_AGE_SECOND,
-      },
+      tokenType: 'Bearer',
       createdAt: updated.owner.shop.createdAt,
       updatedAt: updated.owner.shop.updatedAt,
-    };
+    });
+  }
+
+  async _createRecord(
+    dto: InternalCreateRecordPayload,
+  ): Promise<{ ownerId: string; verificationToken: string }> {
+    return await this.database.otp.create({
+      data: {
+        id: this.snowflake.generate(),
+        ownerId: dto.ownerId,
+        ackRequired: dto.ackRequired,
+        purpose: dto.purpose,
+        maxFailed: dto.maxFailed,
+        maxResend: dto.maxResend,
+        medium: dto.medium,
+        mediumIdentity: dto.mediumIdentity,
+        verificationToken: getRandomBase64Url(16),
+      },
+      select: {
+        ownerId: true,
+        verificationToken: true,
+      },
+    });
   }
 }

@@ -7,6 +7,7 @@ import {
   HttpException,
   InternalServerErrorException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Prisma } from 'src/common/database/generated/client';
@@ -25,6 +26,11 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
         break;
       case 'P2002':
         finalException = new ConflictException('Duplicate value provided');
+        break;
+      case 'P2003':
+        finalException = new UnprocessableEntityException(
+          'Invalid data provided',
+        );
         break;
       case 'P2025':
         finalException = new NotFoundException('Resource not found');

@@ -1,5 +1,8 @@
 import { IsNotEmpty, IsString, Length } from 'class-validator';
-import { OtpMedium, OtpPurpose } from 'src/common/database/generated/enums';
+import type {
+  OtpMedium,
+  OtpPurpose,
+} from 'src/common/database/generated/enums';
 
 export class GenerateOtpDto {
   @IsString({ message: 'must be a string' })
@@ -34,6 +37,16 @@ export class VerifyOtpDto {
   @IsNotEmpty({ message: 'cannot be empty' })
   @Length(6, 6, { message: 'should be 6 characters long' })
   otp: string;
+}
+
+export class InternalCreateRecordPayload {
+  ownerId: string;
+  purpose: OtpPurpose;
+  medium: OtpMedium;
+  maxFailed: number;
+  maxResend: number;
+  mediumIdentity: string;
+  ackRequired: boolean;
 }
 
 export class GenerateOtpResponse {
