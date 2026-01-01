@@ -76,6 +76,7 @@ export class CustomerService {
         contentLength: file.contentLength,
       });
       result.bucket.push({
+        localId: file.localId,
         key,
         fileName: file.name,
         contentType: file.contentType,

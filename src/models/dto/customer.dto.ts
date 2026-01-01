@@ -15,18 +15,6 @@ import {
 } from 'class-validator';
 import type { ColorMode, SideMode } from 'src/common/database/generated/enums';
 
-export class UploadLinkResponse {
-  shopId: string;
-  customerToken: string;
-  bucket: {
-    key: string;
-    fileName: string;
-    contentType: string;
-    contentLength: number;
-    uploadLink: string;
-  }[];
-}
-
 export class CompleteUploadDto {
   @IsString({ message: 'must be a string' })
   @IsOptional()
@@ -103,6 +91,14 @@ export class GenerateUploadLinkDto {
 }
 
 export class FileDto {
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 0 },
+    { message: 'must be a number' },
+  )
+  @IsNotEmpty({ message: 'cannot be empty' })
+  @Min(0, { message: 'must be a valid id' })
+  localId: number;
+
   @IsString({ message: 'must be a string' })
   @IsNotEmpty({ message: 'cannot be empty' })
   name: string;
@@ -117,6 +113,19 @@ export class FileDto {
   )
   @IsNotEmpty({ message: 'cannot be empty' })
   contentLength: number;
+}
+
+export class UploadLinkResponse {
+  shopId: string;
+  customerToken: string;
+  bucket: {
+    localId: number;
+    key: string;
+    fileName: string;
+    contentType: string;
+    contentLength: number;
+    uploadLink: string;
+  }[];
 }
 
 export class UploadCodeResponse {
