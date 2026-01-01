@@ -34,40 +34,69 @@ export class ShopService {
   ) {}
 
   async createOwner(dto: CreateShopDto): Promise<UTokenResponse> {
-    const ownerId = await this.database.shopOwner.findUnique({
-      where: {
-        email: dto.email,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const exists = await this.authService.emailExists(dto.email);
 
-    if (ownerId) {
+    if (exists) {
       throw new BadRequestException('A user with this email already exists');
     }
 
     const salt = await bcryptjs.genSalt(10);
     const hash = await bcryptjs.hash(dto.password, salt);
 
-    await this.database.shop.create({
+    const owner = await this.database.shopOwner.create({
       data: {
         id: this.snowflake.generate(),
-        shopName: dto.shopName,
-        uploadToken: getRandomBase64Url(32),
-        owner: {
+        name: dto.ownerName,
+        email: dto.email,
+        passwordSalt: salt,
+        passwordHash: hash,
+        shop: {
           create: {
             id: this.snowflake.generate(),
-            email: dto.email,
-            name: dto.ownerName,
-            passwordHash: hash,
-            passwordSalt: salt,
+            shopName: dto.shopName,
+            uploadToken: getRandomBase64Url(32),
           },
         },
       },
+      include: {
+        shop: {
+          select: {
+            id: true,
+            shopName: true,
+            uploadToken: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+      omit: {
+        passwordHash: true,
+        passwordSalt: true,
+        updatedAt: true,
+      },
     });
 
-    return this.authService.login({ email: dto.email, password: dto.password });
+    if (!owner.shop) {
+      throw new ServiceUnavailableException('Failed to create owner shop');
+    }
+
+    // TODO: Never logged in user after register, go to email verification process
+
+    return await this.authService._refreshTokens({
+      ownerId: owner.id,
+      ownerName: owner.name,
+      ownerEmail: owner.email,
+      verified: owner.verified,
+      otpRequired: owner.otpRequired,
+      otpGenerated: false,
+      otpVerificationKey: null,
+      shopId: owner.shop.id,
+      shopName: owner.shop.shopName,
+      uploadToken: owner.shop.uploadToken,
+      tokenType: 'Bearer',
+      createdAt: owner.shop.createdAt,
+      updatedAt: owner.shop.updatedAt,
+    });
   }
 
   async deleteOwner(ownerId: string): Promise<string> {
@@ -302,6 +331,11 @@ export class ShopService {
         owner: {
           select: {
             name: true,
+            phones: {
+              select: {
+                phone: true,
+              },
+            },
           },
         },
       },
@@ -311,9 +345,16 @@ export class ShopService {
       throw new BadRequestException('Invalid upload token');
     }
 
-    return {
+    const publiDetails: ShopPublicDetailsResponse = {
       shopName: result.shopName,
       ownerName: result.owner.name,
+      ownerPhones: [],
     };
+
+    for (const ph of result.owner.phones) {
+      publiDetails.ownerPhones.push(ph.phone);
+    }
+
+    return publiDetails;
   }
 }

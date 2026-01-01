@@ -56,3 +56,19 @@ export class CsrfResponse {
   headerName: string;
   value: string;
 }
+
+export class InternalRefreshTokenPayload {
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  verified: boolean;
+  shopId: string;
+  shopName: string;
+  uploadToken: string;
+  otpRequired: boolean;
+  otpGenerated: boolean | null;
+  otpVerificationKey: string | null;
+  tokenType: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

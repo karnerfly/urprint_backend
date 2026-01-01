@@ -134,4 +134,5 @@ export class DeletePhoneNumberResponse {
 export class ShopPublicDetailsResponse {
   shopName: string;
   ownerName: string;
+  ownerPhones: string[];
 }
