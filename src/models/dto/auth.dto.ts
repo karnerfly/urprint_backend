@@ -57,6 +57,11 @@ export class CsrfResponse {
   value: string;
 }
 
+export class EmailExistsResponse {
+  status: string;
+  exists: boolean;
+}
+
 export class InternalRefreshTokenPayload {
   ownerId: string;
   ownerName: string;

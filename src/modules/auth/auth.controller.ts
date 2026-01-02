@@ -16,6 +16,7 @@ import { AuthService } from './auth.service';
 import { LoginDto, UTokenResponse } from 'src/models/dto/auth.dto';
 import type {
   CsrfResponse,
+  EmailExistsResponse,
   JWTPayload,
   LogoutResponse,
 } from 'src/models/dto/auth.dto';
@@ -36,8 +37,14 @@ export class AuthController {
   ) {}
 
   @Get('email/exists')
-  async emailExists(@Query('email') email: string) {
-    throw new ServiceUnavailableException('Not implemented yet');
+  async emailExists(
+    @Query('email') email: string,
+  ): Promise<EmailExistsResponse> {
+    const exists = await this.authService.emailExists(email);
+    return {
+      status: 'ok',
+      exists,
+    };
   }
 
   @Post('email/verify')
