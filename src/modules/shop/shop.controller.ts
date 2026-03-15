@@ -36,7 +36,7 @@ import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import NAMES from 'src/constants/name';
 
 @UseGuards(AuthGuard)
-@Controller('shop')
+@Controller({ path: 'shop', version: '1' })
 export class ShopController {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,

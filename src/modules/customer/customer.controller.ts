@@ -24,7 +24,7 @@ import { ApiQuery } from '@nestjs/swagger';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import NAMES from 'src/constants/name';
 
-@Controller('customer')
+@Controller({ path: 'customer', version: '1' })
 export class CustomerController {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,

@@ -10,7 +10,7 @@ import { CronService } from './cron.service';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { getHash } from 'src/common/utils/hash';
 
-@Controller('cron')
+@Controller({ path: 'cron', version: '1' })
 export class CronController {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,

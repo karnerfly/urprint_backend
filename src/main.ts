@@ -24,10 +24,9 @@ async function bootstrap() {
   });
 
   app.set('trust proxy', 1);
-  app.setGlobalPrefix('api/v1');
   app.enableVersioning({
     type: VersioningType.URI,
-    prefix: 'v1',
+    prefix: 'api/v',
   });
 
   app.use(cookieParser());

@@ -29,7 +29,7 @@ import { getRandomBase64Url } from 'src/common/utils/random';
 import { Throttle } from '@nestjs/throttler';
 import NAMES from 'src/constants/name';
 
-@Controller('auth')
+@Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,

@@ -7,7 +7,7 @@ import {
   UploadExpirationResponse,
 } from 'src/models/dto/masterdata.dto';
 
-@Controller('masterdata')
+@Controller({ path: 'masterdata', version: '1' })
 export class MasterdataController {
   constructor(private readonly masterdataService: MasterdataService) {}
 

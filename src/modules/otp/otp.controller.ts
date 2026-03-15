@@ -13,7 +13,7 @@ import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import NAMES from 'src/constants/name';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
 
-@Controller('otp')
+@Controller({ path: 'otp', version: '1' })
 export class OtpController {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,
