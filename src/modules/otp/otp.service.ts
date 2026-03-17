@@ -82,12 +82,18 @@ export class OtpService {
     });
 
     // NOTE: only support email for now
-    if (record.medium === 'EMAIL') {
+    if (record.purpose === 'EMAIL_VERIFICATION') {
       await this.taskService.SendEmailVerificationMail({
         name: updated.owner.name,
         identity: updated.mediumIdentity,
         otp,
-        timestamp: new Date(),
+        timestamp: new Date(Date.now()),
+      });
+    } else if (record.purpose === 'TWO_FACTOR_AUTHENTICATION') {
+      await this.taskService.SendTwoFactorAuthenticationMail({
+        identity: updated.mediumIdentity,
+        otp,
+        timestamp: new Date(Date.now()),
       });
     }
 
@@ -147,12 +153,18 @@ export class OtpService {
     });
 
     // NOTE: only support email for now
-    if (record.medium === 'EMAIL') {
+    if (record.purpose === 'EMAIL_VERIFICATION') {
       await this.taskService.SendEmailVerificationMail({
         name: updated.owner.name,
         identity: updated.mediumIdentity,
         otp,
-        timestamp: new Date(),
+        timestamp: new Date(Date.now()),
+      });
+    } else if (record.purpose === 'TWO_FACTOR_AUTHENTICATION') {
+      await this.taskService.SendTwoFactorAuthenticationMail({
+        identity: updated.mediumIdentity,
+        otp,
+        timestamp: new Date(Date.now()),
       });
     }
 

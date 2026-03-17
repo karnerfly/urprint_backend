@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
@@ -351,5 +352,39 @@ export class AuthV2Service {
 
   async logout(sessionId: string): Promise<void> {
     await this.session.del(sessionId);
+  }
+
+  async getDetails(ownerId: string): Promise<USessionResponse> {
+    const me = await this.database.shopOwner.findUnique({
+      where: {
+        id: ownerId,
+      },
+      include: {
+        shop: {},
+      },
+      omit: {
+        passwordHash: true,
+        passwordSalt: true,
+      },
+    });
+
+    if (!me || !me.shop) {
+      throw new UnauthorizedException();
+    }
+
+    return {
+      ownerId: me.id,
+      ownerName: me.name,
+      ownerEmail: me.email,
+      verified: me.verified,
+      otpRequired: me.otpRequired,
+      otpGenerated: false,
+      otpVerificationKey: null,
+      shopId: me.shop.id,
+      shopName: me.shop.shopName,
+      uploadToken: me.shop.uploadToken,
+      createdAt: me.shop.createdAt,
+      updatedAt: me.updatedAt,
+    };
   }
 }

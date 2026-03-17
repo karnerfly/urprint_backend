@@ -17,6 +17,7 @@ import type {
   CsrfResponse,
   EmailExistsResponse,
   LogoutResponse,
+  Session,
   USessionResponse,
 } from 'src/models/dto/auth.dto';
 import type { Request, Response } from 'express';
@@ -25,6 +26,7 @@ import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { getRandomBase64Url } from 'src/common/utils/random';
 import NAMES from 'src/constants/name';
 import { ApiCookieAuth } from '@nestjs/swagger';
+import { SessionData } from 'src/common/decorators/session.decorator';
 
 // @Controller({ path: 'auth', version: '1' })
 // export class AuthV1Controller {
@@ -256,5 +258,13 @@ export class AuthV2Controller {
     });
 
     return { status: 'ok' };
+  }
+
+  @HttpCode(200)
+  @Get('me')
+  @UseGuards(AuthSessionGuard)
+  @ApiCookieAuth()
+  async getMe(@SessionData() sessionData: Session): Promise<USessionResponse> {
+    return this.authV2Service.getDetails(sessionData.ownerId);
   }
 }
