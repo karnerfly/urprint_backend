@@ -38,6 +38,16 @@ export class CreateShopDto {
   confirmPassword: string;
 }
 
+export class VerifyOwnerDto {
+  @IsString({ message: 'must be a string' })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  ownerId: string;
+
+  @IsString({ message: 'must be a string' })
+  @IsNotEmpty({ message: 'cannot be empty' })
+  ackId: string;
+}
+
 export class UpdateShopLocationDto {
   @IsOptional()
   @IsString({ message: 'must be a string' })
@@ -102,6 +112,18 @@ export class ShopUploadedDocument {
   colorMode: ColorMode;
   sideMode: SideMode;
   url: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class CreateOwnerResponse {
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  verified: boolean;
+  otpRequired: boolean;
+  otpGenerated: boolean;
+  otpVerificationKey: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { ShopService } from './shop.service';
 import {
   AddPhoneNumberDto,
   AddPhoneNumberResponse,
+  CreateOwnerResponse,
   CreateShopDto,
   DeleteLocationsResponse,
   DeleteOwnerResponse,
@@ -25,17 +27,17 @@ import {
   ShopPublicDetailsResponse,
   ShopUploadResponse,
   UpdateShopLocationDto,
+  VerifyOwnerDto,
 } from 'src/models/dto/shop.dto';
-import { UTokenResponse } from 'src/models/dto/auth.dto';
-import type { Response } from 'express';
-import { AuthGuard, Public } from 'src/common/guards/auth/auth.guard';
-import { TokenData } from 'src/common/decorators/token.decorator';
-import type { JWTPayload } from 'src/models/dto/auth.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { AuthSessionGuard, Public } from 'src/common/guards/auth/auth.guard';
+import { type Session } from 'src/models/dto/auth.dto';
+import { ApiCookieAuth } from '@nestjs/swagger';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
+import { SessionData } from 'src/common/decorators/session.decorator';
+import type { Request, Response } from 'express';
 import NAMES from 'src/constants/name';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthSessionGuard)
 @Controller({ path: 'shop', version: '1' })
 export class ShopController {
   constructor(
@@ -45,102 +47,129 @@ export class ShopController {
 
   @Post('owner')
   @Public()
-  async createOwner(
-    @Body() dto: CreateShopDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<UTokenResponse> {
-    const resp = await this.shopService.createOwner(dto);
+  async createOwner(@Body() dto: CreateShopDto): Promise<CreateOwnerResponse> {
+    return await this.shopService.createOwner(dto);
+  }
 
-    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
+  @Post('owner/email-verify')
+  @Public()
+  async verifyEmail(
+    @Body() dto: VerifyOwnerDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const ip = req.ip || '';
+    const deviceId = req.cookies[NAMES.COOKIE.DEVICE_ID]
+      ? (req.cookies[NAMES.COOKIE.DEVICE_ID] as string)
+      : null;
+    const userAgent = req.headers['user-agent']
+      ? (req.headers['user-agent'] as string)
+      : '';
+    const resp = await this.shopService.verifyOwner(
+      dto,
+      ip,
+      userAgent,
+      deviceId,
+    );
+
+    res.cookie(NAMES.COOKIE.AUTH_SESSION_SECRET, resp.sessionSecret, {
       domain: this.config.GetWildCardDomain(),
-      maxAge: resp.tokens.refreshTokenMaxAge * 1000,
-      path: '/',
       httpOnly: true,
+      path: '/',
       sameSite: 'lax',
+      maxAge: 1000 * this.config.SESSION_EXPIRY_SECONDS,
     });
 
-    return resp;
+    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.sessionId, {
+      domain: this.config.GetWildCardDomain(),
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 1000 * this.config.SESSION_EXPIRY_SECONDS,
+    });
+
+    return resp.response;
   }
 
   @Delete('owner')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async deleteOwner(
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<DeleteOwnerResponse> {
-    const deletedId = await this.shopService.deleteOwner(tokenData.ownerId);
+    const deletedId = await this.shopService.deleteOwner(sessionData.ownerId);
     return { status: 'ok', ownerId: deletedId };
   }
 
   @Patch('location')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async updateLocation(
     @Body() dto: UpdateShopLocationDto,
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<ShopLocationResponse> {
-    return await this.shopService.updateLocation(tokenData.shopId, dto);
+    return await this.shopService.updateLocation(sessionData.shopId, dto);
   }
 
   @Get('location')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async getLocation(
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<ShopLocationResponse> {
-    return await this.shopService.getLocation(tokenData.shopId);
+    return await this.shopService.getLocation(sessionData.shopId);
   }
 
   @Delete('location')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async deleteLocation(
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<DeleteLocationsResponse> {
-    const deletedId = await this.shopService.deleteLocation(tokenData.shopId);
+    const deletedId = await this.shopService.deleteLocation(sessionData.shopId);
     return { status: 'ok', locationId: deletedId };
   }
 
   @Post('owner/phone')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async addPhone(
     @Body() dto: AddPhoneNumberDto,
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<AddPhoneNumberResponse> {
-    const id = await this.shopService.addPhoneNumber(tokenData.ownerId, dto);
+    const id = await this.shopService.addPhoneNumber(sessionData.ownerId, dto);
     return { status: 'ok', phoneNumberId: id };
   }
 
   @Get('owner/phone')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async getPhones(
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<PhoneNumberResponse> {
-    return await this.shopService.getPhoneNumbers(tokenData.ownerId);
+    return await this.shopService.getPhoneNumbers(sessionData.ownerId);
   }
 
   @Delete('owner/phone')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async deletePhone(
     @Query('phoneNumberId', ParseIntPipe) phoneNumberId: number,
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<DeletePhoneNumberResponse> {
     if (phoneNumberId < 1) {
       throw new BadRequestException('Invalid phone number id');
     }
-    const id = await this.shopService.deletePhoneNumber(tokenData.ownerId, {
+    const id = await this.shopService.deletePhoneNumber(sessionData.ownerId, {
       phoneNumberId,
     });
     return { status: 'ok', phoneNumberId: id };
   }
 
   @Get('upload')
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth()
   async getUploades(
     @Query('code') code: string,
-    @TokenData() tokenData: JWTPayload,
+    @SessionData() sessionData: Session,
   ): Promise<ShopUploadResponse> {
     if (!code) {
       throw new BadRequestException('Invalid code');
     }
 
-    return await this.shopService.getUpload(tokenData.shopId, code);
+    return await this.shopService.getUpload(sessionData.shopId, code);
   }
 
   @Get('/public-details')

@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, Inject, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Inject,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { OtpService } from './otp.service';
 import {
   GenerateOtpDto,
@@ -8,7 +16,7 @@ import {
   VerifyOtpDto,
   VerifyOtpResponse,
 } from 'src/models/dto/otp.dto';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import NAMES from 'src/constants/name';
 import { UTokenResponse } from 'src/models/dto/auth.dto';
@@ -38,22 +46,46 @@ export class OtpController {
     return await this.otpService.verify(dto);
   }
 
+  // @HttpCode(200)
+  // @Post('verify-and-generate-tokens')
+  // async verifyAndGenerateTokens(
+  //   @Body() dto: VerifyOtpDto,
+  //   @Res({ passthrough: true }) res: Response,
+  // ): Promise<UTokenResponse> {
+  //   const resp = await this.otpService.verifyAndGenerateTokens(dto);
+
+  //   res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
+  //     domain: this.config.GetWildCardDomain(),
+  //     maxAge: resp.tokens.refreshTokenMaxAge * 1000,
+  //     path: '/',
+  //     httpOnly: true,
+  //     sameSite: 'lax',
+  //   });
+
+  //   return resp;
+  // }
+
   @HttpCode(200)
-  @Post('verify-and-generate-tokens')
-  async verifyAndGenerateTokens(
+  @Post('verify-and-activate-session')
+  async verifyAndActivateSession(
     @Body() dto: VerifyOtpDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<UTokenResponse> {
-    const resp = await this.otpService.verifyAndGenerateTokens(dto);
+    @Req() req: Request,
+  ): Promise<{ status: string; activated: boolean; ownerId: string }> {
+    const sessionId = req.cookies[NAMES.COOKIE.AUTH_SESSION] as string;
+    const sessionSecret = req.cookies[
+      NAMES.COOKIE.AUTH_SESSION_SECRET
+    ] as string;
 
-    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.tokens.refreshToken, {
-      domain: this.config.GetWildCardDomain(),
-      maxAge: resp.tokens.refreshTokenMaxAge * 1000,
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-    });
+    await this.otpService.verifyAndActivateSession(
+      dto,
+      sessionId,
+      sessionSecret,
+    );
 
-    return resp;
+    return {
+      status: 'ok',
+      activated: true,
+      ownerId: dto.ownerId,
+    };
   }
 }

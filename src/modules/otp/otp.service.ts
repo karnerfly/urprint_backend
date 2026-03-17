@@ -7,7 +7,11 @@ import {
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
 import { getHash } from 'src/common/utils/hash';
-import { getRandomBase64Url, getRandomCode } from 'src/common/utils/random';
+import {
+  getRandomBase64Url,
+  getRandomCode,
+  getRandomHex,
+} from 'src/common/utils/random';
 import {
   InternalCreateRecordPayload,
   GenerateOtpDto,
@@ -18,9 +22,15 @@ import {
   VerifyOtpResponse,
 } from 'src/models/dto/otp.dto';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
-import { UTokenResponse } from 'src/models/dto/auth.dto';
+import {
+  JWTPayload,
+  SessionState,
+  USessionResponse,
+  UTokenResponse,
+} from 'src/models/dto/auth.dto';
 import { TaskService } from 'src/common/task/task.service';
-import { AuthService } from '../auth/auth.service';
+import { JwtService } from '@nestjs/jwt';
+import { SessionService } from 'src/common/session/session.service';
 
 @Injectable()
 export class OtpService {
@@ -28,8 +38,9 @@ export class OtpService {
     @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly database: DatabaseService,
     private readonly snowflake: Snowflake,
+    private readonly jwtService: JwtService,
     private readonly taskService: TaskService,
-    private readonly authService: AuthService,
+    private readonly session: SessionService,
   ) {}
 
   async generate(dto: GenerateOtpDto): Promise<GenerateOtpResponse> {
@@ -305,21 +316,149 @@ export class OtpService {
       throw new ForbiddenException('Owner does not have any shop');
     }
 
-    return await this.authService._refreshTokens({
+    const accessTokenExpireAt = new Date(
+      Date.now() + this.config.ACCESS_TOKEN_MAX_AGE_SECOND * 1000,
+    );
+
+    const refreshTokenExpireAt = new Date(
+      Date.now() + this.config.REFRESH_TOKEN_MAX_AGE_SECOND * 1000,
+    );
+
+    const accessToken = await this.jwtService.signAsync<JWTPayload>(
+      {
+        ownerId: updated.ownerId,
+        ownerName: updated.owner.name,
+        ownerEmail: updated.owner.email,
+        verified: updated.owner.verified,
+        shopId: updated.owner.shop.id,
+        shopName: updated.owner.shop.shopName,
+        uploadToken: updated.owner.shop.uploadToken,
+      },
+      {
+        algorithm: 'HS256',
+        issuer: this.config.DOMAIN,
+        expiresIn: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
+        secret: this.config.JWT_SECRET,
+      },
+    );
+    const refreshToken = getRandomHex(32);
+
+    await this.database.shopOwner.update({
+      where: {
+        id: updated.ownerId,
+      },
+      data: {
+        token: {
+          upsert: {
+            create: {
+              refreshToken,
+              refreshTokenExpireAt,
+            },
+            update: {
+              refreshToken,
+              refreshTokenExpireAt,
+            },
+          },
+        },
+      },
+    });
+
+    return {
       ownerId: updated.ownerId,
-      ownerEmail: updated.owner.email,
       ownerName: updated.owner.name,
+      ownerEmail: updated.owner.email,
       verified: updated.owner.verified,
+      otpRequired: updated.owner.otpRequired,
+      otpGenerated: updated.otpGenerated,
+      otpVerificationKey: updated.verificationToken,
       shopId: updated.owner.shop.id,
       shopName: updated.owner.shop.shopName,
       uploadToken: updated.owner.shop.uploadToken,
-      otpGenerated: false,
-      otpRequired: false,
-      otpVerificationKey: null,
-      tokenType: 'Bearer',
+      tokens: {
+        type: 'Bearer',
+        accessToken,
+        refreshToken,
+        accessTokenExpireAt,
+        refreshTokenExpireAt,
+        accessTokenMaxAge: this.config.ACCESS_TOKEN_MAX_AGE_SECOND,
+        refreshTokenMaxAge: this.config.REFRESH_TOKEN_MAX_AGE_SECOND,
+      },
       createdAt: updated.owner.shop.createdAt,
-      updatedAt: updated.owner.shop.updatedAt,
+      updatedAt: updated.owner.updatedAt,
+    };
+  }
+
+  async verifyAndActivateSession(
+    dto: VerifyOtpDto,
+    sessionId: string,
+    sessionSecret: string,
+  ): Promise<void> {
+    const record = await this.database.otp.findFirst({
+      where: {
+        ownerId: dto.ownerId,
+        verificationToken: dto.verificationToken,
+        otpGenerated: true,
+        otpVerified: false,
+        expireAt: {
+          gt: new Date(Date.now()),
+        },
+      },
     });
+
+    if (!record) {
+      throw new BadRequestException('Invalid request');
+    }
+
+    if (record.failedCount >= record.maxFailed) {
+      throw new BadRequestException('Max failed reached');
+    }
+
+    const otpHash = getHash(dto.otp, dto.verificationToken);
+
+    if (otpHash != record.otpHash) {
+      await this.database.otp.update({
+        where: {
+          ownerId: dto.ownerId,
+          verificationToken: dto.verificationToken,
+        },
+        data: {
+          failedCount: record.failedCount + 1,
+        },
+      });
+
+      throw new BadRequestException('Invalid otp');
+    }
+
+    const updated = await this.database.otp.update({
+      where: {
+        ownerId: dto.ownerId,
+        verificationToken: dto.verificationToken,
+      },
+      data: {
+        otpVerified: true,
+      },
+      include: {
+        owner: {
+          include: {
+            shop: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!updated.owner.shop) {
+      throw new ForbiddenException('Owner does not have any shop');
+    }
+
+    await this.session.update(
+      sessionId,
+      { state: SessionState.ACTIVE },
+      Buffer.from(sessionSecret, 'hex'),
+    );
   }
 
   async _createRecord(

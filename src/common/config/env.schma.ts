@@ -12,6 +12,7 @@ export const EnvSchema = z.object({
   JWT_SECRET: z.string().min(32),
   ACCESS_TOKEN_MAX_AGE_SECOND: z.coerce.number().int().positive(),
   REFRESH_TOKEN_MAX_AGE_SECOND: z.coerce.number().int().positive(),
+  SESSION_EXPIRY_SECONDS: z.coerce.number().int().positive(),
 
   R2_REGION: z.string(),
   R2_BUCKET_NAME: z.string(),

@@ -1,15 +1,17 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
 import { DatabaseService } from 'src/common/database/database.service';
-import { getRandomBase64Url } from 'src/common/utils/random';
+import { getRandomBase64Url, getRandomHex } from 'src/common/utils/random';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import {
   AddPhoneNumberDto,
+  CreateOwnerResponse,
   CreateShopDto,
   DeletePhoneNumberDto,
   PhoneNumberResponse,
@@ -18,25 +20,36 @@ import {
   ShopUploadedDocument,
   ShopUploadResponse,
   UpdateShopLocationDto,
+  VerifyOwnerDto,
 } from 'src/models/dto/shop.dto';
-import { AuthService } from '../auth/auth.service';
-import { UTokenResponse } from 'src/models/dto/auth.dto';
 import { S3Service } from 'src/common/s3/s3.service';
 import { getHash } from 'src/common/utils/hash';
+import { OtpService } from '../otp/otp.service';
+import {
+  Session,
+  SessionState,
+  USessionResponse,
+} from 'src/models/dto/auth.dto';
+import { SessionService } from 'src/common/session/session.service';
+import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 
 @Injectable()
 export class ShopService {
   constructor(
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly database: DatabaseService,
-    private readonly authService: AuthService,
+    private readonly otpService: OtpService,
+    private readonly session: SessionService,
     private readonly snowflake: Snowflake,
     private readonly s3: S3Service,
   ) {}
 
-  async createOwner(dto: CreateShopDto): Promise<UTokenResponse> {
-    const exists = await this.authService.emailExists(dto.email);
+  async createOwner(dto: CreateShopDto): Promise<CreateOwnerResponse> {
+    const count = await this.database.shopOwner.count({
+      where: { email: dto.email },
+    });
 
-    if (exists) {
+    if (count > 0) {
       throw new BadRequestException('A user with this email already exists');
     }
 
@@ -61,18 +74,13 @@ export class ShopService {
       include: {
         shop: {
           select: {
-            id: true,
-            shopName: true,
-            uploadToken: true,
             createdAt: true,
-            updatedAt: true,
           },
         },
       },
       omit: {
         passwordHash: true,
         passwordSalt: true,
-        updatedAt: true,
       },
     });
 
@@ -80,23 +88,126 @@ export class ShopService {
       throw new ServiceUnavailableException('Failed to create owner shop');
     }
 
-    // TODO: Never logged in user after register, go to email verification process
+    const { verificationToken } = await this.otpService._createRecord({
+      ackRequired: true,
+      maxFailed: 3,
+      maxResend: 3,
+      medium: 'EMAIL',
+      mediumIdentity: owner.email,
+      ownerId: owner.id,
+      purpose: 'EMAIL_VERIFICATION',
+    });
 
-    return await this.authService._refreshTokens({
+    return {
       ownerId: owner.id,
       ownerName: owner.name,
       ownerEmail: owner.email,
       verified: owner.verified,
       otpRequired: owner.otpRequired,
       otpGenerated: false,
-      otpVerificationKey: null,
-      shopId: owner.shop.id,
-      shopName: owner.shop.shopName,
-      uploadToken: owner.shop.uploadToken,
-      tokenType: 'Bearer',
+      otpVerificationKey: verificationToken,
       createdAt: owner.shop.createdAt,
-      updatedAt: owner.shop.updatedAt,
+      updatedAt: owner.updatedAt,
+    };
+  }
+
+  async verifyOwner(
+    dto: VerifyOwnerDto,
+    ip: string,
+    userAgent: string,
+    deviceId: string | null,
+  ): Promise<{
+    response: USessionResponse;
+    sessionId: string;
+    sessionSecret: string;
+  }> {
+    const otp = await this.database.otp.updateMany({
+      where: {
+        ackId: dto.ackId,
+        ownerId: dto.ownerId,
+        ackRequired: true,
+        ackUsed: false,
+        ackExpireAt: {
+          gt: new Date(Date.now()),
+        },
+      },
+      data: {
+        ackUsed: true,
+      },
     });
+
+    if (otp.count == 0) {
+      throw new BadRequestException('Invalid request');
+    }
+
+    const owner = await this.database.shopOwner.update({
+      where: {
+        id: dto.ownerId,
+      },
+      data: {
+        verified: true,
+      },
+      include: {
+        shop: {},
+      },
+      omit: {
+        passwordHash: true,
+        passwordSalt: true,
+      },
+    });
+
+    if (!owner || !owner.shop) {
+      throw new BadRequestException('Invalid request');
+    }
+
+    const now = Date.now();
+    const sessionId = getRandomHex(32);
+    const sessionSecret = getRandomHex(32);
+
+    const payload: Session = {
+      state: SessionState.ACTIVE,
+      ownerId: owner.id,
+      shopId: owner.shop.id,
+      otpRequired: owner.otpRequired,
+      uploadToken: owner.shop.uploadToken,
+      verified: owner.verified,
+      profile: {
+        ownerName: owner.name,
+        ownerEmail: owner.email,
+        shopName: owner.shop.shopName,
+      },
+      deviceId,
+      ip,
+      userAgent,
+      iat: now,
+      exp: now + this.config.SESSION_EXPIRY_SECONDS * 1000,
+    };
+
+    await this.session.put(
+      sessionId,
+      payload,
+      Buffer.from(sessionSecret, 'hex'),
+      this.config.SESSION_EXPIRY_SECONDS,
+    );
+
+    return {
+      sessionId,
+      sessionSecret,
+      response: {
+        ownerId: owner.id,
+        ownerName: owner.name,
+        ownerEmail: owner.email,
+        verified: owner.verified,
+        otpRequired: owner.otpRequired,
+        otpGenerated: false,
+        otpVerificationKey: null,
+        shopId: owner.shop.id,
+        shopName: owner.shop.shopName,
+        uploadToken: owner.shop.uploadToken,
+        createdAt: owner.shop.createdAt,
+        updatedAt: owner.updatedAt,
+      },
+    };
   }
 
   async deleteOwner(ownerId: string): Promise<string> {

@@ -8,9 +8,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
-import { JWTPayload } from 'src/models/dto/auth.dto';
+import { JWTPayload, Session } from 'src/models/dto/auth.dto';
 
 export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
@@ -54,5 +54,30 @@ export class AuthGuard implements CanActivate {
   private extractTokenFromHeader(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
+  }
+}
+
+@Injectable()
+export class AuthSessionGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
+    const response = context.switchToHttp().getResponse<Response>();
+
+    const session = response.locals['session'] as Session | undefined;
+
+    if (!session) {
+      throw new UnauthorizedException();
+    }
+
+    return true;
   }
 }

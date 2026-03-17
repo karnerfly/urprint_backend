@@ -50,15 +50,19 @@ async function bootstrap() {
     .setTitle('Api Documentation')
     .setDescription('The UrPrint API description')
     .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        in: 'header',
-      },
-      'access-token',
-    )
+    // .addBearerAuth(
+    //   {
+    //     type: 'http',
+    //     scheme: 'bearer',
+    //     bearerFormat: 'JWT',
+    //     in: 'header',
+    //   },
+    //   'access-token',
+    // )
+    .addCookieAuth(NAMES.COOKIE.AUTH_SESSION, {
+      type: 'apiKey',
+      in: 'cookie',
+    })
     .addSecurity('csrf', {
       type: 'apiKey',
       name: NAMES.HEADER.CSRF_TOKEN,

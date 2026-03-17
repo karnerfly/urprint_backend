@@ -8,16 +8,22 @@ import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
+import { SessionService } from 'src/common/session/session.service';
 import { getRandomHex } from 'src/common/utils/random';
 import {
   InternalRefreshTokenPayload,
   JWTPayload,
   LoginDto,
+  Session,
+  SessionState,
+  USessionResponse,
   UTokenResponse,
 } from 'src/models/dto/auth.dto';
+import crypto from 'node:crypto';
+import { OtpService } from '../otp/otp.service';
 
 @Injectable()
-export class AuthService {
+export class AuthV1Service {
   constructor(
     @Inject(CONFIG_NAME) private readonly config: AppConfig,
     private readonly database: DatabaseService,
@@ -215,5 +221,135 @@ export class AuthService {
       createdAt: payload.createdAt,
       updatedAt: payload.updatedAt,
     };
+  }
+}
+
+@Injectable()
+export class AuthV2Service {
+  constructor(
+    @Inject(CONFIG_NAME) private readonly config: AppConfig,
+    private readonly database: DatabaseService,
+    private readonly otpService: OtpService,
+    private readonly session: SessionService,
+  ) {}
+
+  async emailExists(email: string): Promise<boolean> {
+    const exists = await this.database.shopOwner.count({
+      where: { email },
+    });
+    return exists > 0;
+  }
+
+  async login(
+    dto: LoginDto,
+    ip: string,
+    userAgent: string,
+    deviceId: string | null,
+  ): Promise<{
+    response: USessionResponse;
+    sessionId: string;
+    sessionSecret: string;
+  }> {
+    const record = await this.database.shopOwner.findUnique({
+      where: {
+        email: dto.email,
+      },
+      include: {
+        shop: {
+          select: {
+            id: true,
+            shopName: true,
+            uploadToken: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!record || !record.shop) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    if (!record.verified) {
+      throw new BadRequestException('User is not verified');
+    }
+
+    const matched = await bcryptjs.compare(dto.password, record.passwordHash);
+
+    if (!matched) {
+      throw new BadRequestException('Invalid credentials');
+    }
+
+    const now = Date.now();
+    const sessionId = getRandomHex(32);
+    const sessionSecret = getRandomHex(32);
+
+    const state = record.otpRequired
+      ? SessionState.DEACTIVE
+      : SessionState.ACTIVE;
+
+    const payload: Session = {
+      state,
+      ownerId: record.id,
+      shopId: record.shop.id,
+      otpRequired: record.otpRequired,
+      uploadToken: record.shop.uploadToken,
+      verified: record.verified,
+      profile: {
+        ownerName: record.name,
+        ownerEmail: record.email,
+        shopName: record.shop.shopName,
+      },
+      deviceId,
+      ip,
+      userAgent,
+      iat: now,
+      exp: now + this.config.SESSION_EXPIRY_SECONDS * 1000,
+    };
+
+    await this.session.put(
+      sessionId,
+      payload,
+      Buffer.from(sessionSecret, 'hex'),
+      this.config.SESSION_EXPIRY_SECONDS,
+    );
+
+    let otpVerificationKey: string | null = null;
+
+    if (record.otpRequired) {
+      const { verificationToken } = await this.otpService._createRecord({
+        ackRequired: false,
+        maxFailed: 3,
+        maxResend: 3,
+        medium: 'EMAIL',
+        mediumIdentity: record.email,
+        ownerId: record.id,
+        purpose: 'TWO_FACTOR_AUTHENTICATION',
+      });
+      otpVerificationKey = verificationToken;
+    }
+
+    return {
+      sessionId,
+      sessionSecret,
+      response: {
+        ownerId: record.id,
+        ownerName: record.name,
+        ownerEmail: record.email,
+        verified: record.verified,
+        otpRequired: record.otpRequired,
+        otpGenerated: false,
+        otpVerificationKey,
+        shopId: record.shop.id,
+        shopName: record.shop.shopName,
+        uploadToken: record.shop.uploadToken,
+        createdAt: record.shop.createdAt,
+        updatedAt: record.updatedAt,
+      },
+    };
+  }
+
+  async logout(sessionId: string): Promise<void> {
+    await this.session.del(sessionId);
   }
 }

@@ -22,6 +22,8 @@ import { OtpModule } from './modules/otp/otp.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DeviceIdMiddleware } from './common/middlewares/device_id.middleware';
 import { CsrfGuard } from './common/guards/auth/csrf.guard';
+import { SessionModule } from './common/session/session.module';
+import { SessionMiddleware } from './common/middlewares/session.middleware';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { CsrfGuard } from './common/guards/auth/csrf.guard';
     CustomerModule,
     CronModule,
     OtpModule,
+    SessionModule,
   ],
   providers: [
     {
@@ -71,5 +74,6 @@ export class AppModule implements NestModule {
       .forRoutes('*csrf');
 
     consumer.apply(DeviceIdMiddleware).forRoutes('*deviceId');
+    consumer.apply(SessionMiddleware).forRoutes('*session');
   }
 }
