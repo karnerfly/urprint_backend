@@ -30,6 +30,32 @@ export class CronService {
     }
   }
 
+  async deleteStaleOtps() {
+    try {
+      this.logger.log('Start to delete expired otps...');
+      const now = new Date(Date.now());
+      await this.database.otp.deleteMany({
+        where: {
+          OR: [
+            {
+              createdAt: {
+                lte: new Date(now.getTime() - 10 * 60 * 1000),
+              },
+            },
+            {
+              expireAt: {
+                lte: now,
+              },
+            },
+          ],
+        },
+      });
+      this.logger.log('Stale otps deleted successfully');
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
   async deleteStaleRefreshToken() {
     try {
       this.logger.log('Start to delete expired refresh tokens...');

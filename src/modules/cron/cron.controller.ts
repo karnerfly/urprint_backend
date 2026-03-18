@@ -29,6 +29,7 @@ export class CronController {
     }
 
     await this.cronService.deleteStaleUploads();
+    await this.cronService.deleteStaleOtps();
     await this.cronService.deleteStaleRefreshToken();
   }
 }
