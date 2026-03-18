@@ -55,7 +55,11 @@ export class SessionService implements OnModuleInit {
     await this.redis.del(key);
   }
 
-  async update(key: string, payload: UpdateSessionPayload, secret: Buffer) {
+  async update(
+    key: string,
+    payload: UpdateSessionPayload,
+    secret: Buffer,
+  ): Promise<boolean> {
     key = `users:session:${key}`;
     const ttl = await this.redis.ttl(key);
 
@@ -73,6 +77,8 @@ export class SessionService implements OnModuleInit {
       if (ttl > 0) {
         await this.redis.expire(key, ttl);
       }
+      return true;
     }
+    return false;
   }
 }

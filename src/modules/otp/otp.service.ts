@@ -404,11 +404,12 @@ export class OtpService {
     dto: VerifyOtpDto,
     sessionId: string,
     sessionSecret: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const record = await this.database.otp.findFirst({
       where: {
         ownerId: dto.ownerId,
         verificationToken: dto.verificationToken,
+        purpose: 'TWO_FACTOR_AUTHENTICATION',
         otpGenerated: true,
         otpVerified: false,
         expireAt: {
@@ -441,7 +442,7 @@ export class OtpService {
       throw new BadRequestException('Invalid otp');
     }
 
-    const updated = await this.database.otp.update({
+    await this.database.otp.update({
       where: {
         ownerId: dto.ownerId,
         verificationToken: dto.verificationToken,
@@ -449,24 +450,9 @@ export class OtpService {
       data: {
         otpVerified: true,
       },
-      include: {
-        owner: {
-          include: {
-            shop: {
-              select: {
-                id: true,
-              },
-            },
-          },
-        },
-      },
     });
 
-    if (!updated.owner.shop) {
-      throw new ForbiddenException('Owner does not have any shop');
-    }
-
-    await this.session.update(
+    return await this.session.update(
       sessionId,
       { state: SessionState.ACTIVE },
       Buffer.from(sessionSecret, 'hex'),

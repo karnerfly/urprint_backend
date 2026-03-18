@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   Inject,
   Post,
@@ -19,7 +20,6 @@ import {
 import type { Request, Response } from 'express';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import NAMES from 'src/constants/name';
-import { UTokenResponse } from 'src/models/dto/auth.dto';
 
 @Controller({ path: 'otp', version: '1' })
 export class OtpController {
@@ -70,17 +70,40 @@ export class OtpController {
   async verifyAndActivateSession(
     @Body() dto: VerifyOtpDto,
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ status: string; activated: boolean; ownerId: string }> {
-    const sessionId = req.cookies[NAMES.COOKIE.AUTH_SESSION] as string;
-    const sessionSecret = req.cookies[
-      NAMES.COOKIE.AUTH_SESSION_SECRET
-    ] as string;
+    const sessionId =
+      (req.cookies[NAMES.COOKIE.AUTH_SESSION] as string) || undefined;
+    const sessionSecret =
+      (req.cookies[NAMES.COOKIE.AUTH_SESSION_SECRET] as string) || undefined;
 
-    await this.otpService.verifyAndActivateSession(
+    if (!sessionId || !sessionSecret) {
+      throw new ForbiddenException('Invalid request');
+    }
+
+    const updated = await this.otpService.verifyAndActivateSession(
       dto,
       sessionId,
       sessionSecret,
     );
+
+    if (!updated) {
+      res.cookie(NAMES.COOKIE.AUTH_SESSION_SECRET, '', {
+        domain: this.config.GetWildCardDomain(),
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: -1,
+      });
+
+      res.cookie(NAMES.COOKIE.AUTH_SESSION, '', {
+        domain: this.config.GetWildCardDomain(),
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: -1,
+      });
+    }
 
     return {
       status: 'ok',

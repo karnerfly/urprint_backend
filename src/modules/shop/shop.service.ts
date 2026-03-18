@@ -125,6 +125,7 @@ export class ShopService {
       where: {
         ackId: dto.ackId,
         ownerId: dto.ownerId,
+        purpose: 'EMAIL_VERIFICATION',
         ackRequired: true,
         ackUsed: false,
         ackExpireAt: {
