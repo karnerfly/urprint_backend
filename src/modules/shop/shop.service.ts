@@ -44,7 +44,7 @@ export class ShopService {
     private readonly s3: S3Service,
   ) {}
 
-  async createOwner(dto: CreateShopDto): Promise<CreateOwnerResponse> {
+  async createOwner(dto: CreateShopDto): Promise<USessionResponse> {
     const count = await this.database.shopOwner.count({
       where: { email: dto.email },
     });
@@ -61,6 +61,7 @@ export class ShopService {
         id: this.snowflake.generate(),
         name: dto.ownerName,
         email: dto.email,
+        otpRequired: false, // by default disable 2fa
         passwordSalt: salt,
         passwordHash: hash,
         shop: {
@@ -74,6 +75,9 @@ export class ShopService {
       include: {
         shop: {
           select: {
+            id: true,
+            shopName: true,
+            uploadToken: true,
             createdAt: true,
           },
         },
@@ -106,6 +110,9 @@ export class ShopService {
       otpRequired: owner.otpRequired,
       otpGenerated: false,
       otpVerificationKey: verificationToken,
+      shopId: owner.shop.id,
+      shopName: owner.shop.shopName,
+      uploadToken: owner.shop.uploadToken,
       createdAt: owner.shop.createdAt,
       updatedAt: owner.updatedAt,
     };

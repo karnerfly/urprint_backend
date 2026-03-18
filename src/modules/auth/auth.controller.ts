@@ -210,21 +210,23 @@ export class AuthV2Controller {
 
     const resp = await this.authV2Service.login(dto, ip, userAgent, deviceId);
 
-    res.cookie(NAMES.COOKIE.AUTH_SESSION_SECRET, resp.sessionSecret, {
-      domain: this.config.GetWildCardDomain(),
-      httpOnly: true,
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 1000 * this.config.SESSION_EXPIRY_SECONDS,
-    });
+    if (resp.sessionSecret && resp.sessionId) {
+      res.cookie(NAMES.COOKIE.AUTH_SESSION_SECRET, resp.sessionSecret, {
+        domain: this.config.GetWildCardDomain(),
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 1000 * this.config.SESSION_EXPIRY_SECONDS,
+      });
 
-    res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.sessionId, {
-      domain: this.config.GetWildCardDomain(),
-      httpOnly: true,
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 1000 * this.config.SESSION_EXPIRY_SECONDS,
-    });
+      res.cookie(NAMES.COOKIE.AUTH_SESSION, resp.sessionId, {
+        domain: this.config.GetWildCardDomain(),
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 1000 * this.config.SESSION_EXPIRY_SECONDS,
+      });
+    }
 
     return resp.response;
   }

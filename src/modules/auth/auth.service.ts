@@ -10,7 +10,7 @@ import bcryptjs from 'bcryptjs';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { DatabaseService } from 'src/common/database/database.service';
 import { SessionService } from 'src/common/session/session.service';
-import { getRandomHex } from 'src/common/utils/random';
+import { getRandomBase64Url, getRandomHex } from 'src/common/utils/random';
 import {
   InternalRefreshTokenPayload,
   JWTPayload,
@@ -272,7 +272,41 @@ export class AuthV2Service {
     }
 
     if (!record.verified) {
-      throw new BadRequestException('User is not verified');
+      await this.database.otp.deleteMany({
+        where: {
+          ownerId: record.id,
+          purpose: 'EMAIL_VERIFICATION',
+        },
+      });
+
+      const { verificationToken } = await this.otpService._createRecord({
+        ackRequired: true,
+        maxFailed: 3,
+        maxResend: 3,
+        medium: 'EMAIL',
+        mediumIdentity: record.email,
+        ownerId: record.id,
+        purpose: 'EMAIL_VERIFICATION',
+      });
+
+      return {
+        sessionId: '',
+        sessionSecret: '',
+        response: {
+          ownerId: record.id,
+          ownerName: record.name,
+          ownerEmail: record.email,
+          verified: record.verified,
+          otpRequired: record.otpRequired,
+          otpGenerated: false,
+          otpVerificationKey: verificationToken,
+          shopId: record.shop.id,
+          shopName: record.shop.shopName,
+          uploadToken: record.shop.uploadToken,
+          createdAt: record.shop.createdAt,
+          updatedAt: record.updatedAt,
+        },
+      };
     }
 
     const matched = await bcryptjs.compare(dto.password, record.passwordHash);

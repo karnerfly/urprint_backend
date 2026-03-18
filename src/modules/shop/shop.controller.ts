@@ -30,7 +30,7 @@ import {
   VerifyOwnerDto,
 } from 'src/models/dto/shop.dto';
 import { AuthSessionGuard, Public } from 'src/common/guards/auth/auth.guard';
-import { type Session } from 'src/models/dto/auth.dto';
+import { USessionResponse, type Session } from 'src/models/dto/auth.dto';
 import { ApiCookieAuth } from '@nestjs/swagger';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
 import { SessionData } from 'src/common/decorators/session.decorator';
@@ -47,7 +47,7 @@ export class ShopController {
 
   @Post('owner')
   @Public()
-  async createOwner(@Body() dto: CreateShopDto): Promise<CreateOwnerResponse> {
+  async createOwner(@Body() dto: CreateShopDto): Promise<USessionResponse> {
     return await this.shopService.createOwner(dto);
   }
 
@@ -57,7 +57,7 @@ export class ShopController {
     @Body() dto: VerifyOwnerDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<USessionResponse> {
     const ip = req.ip || '';
     const deviceId = req.cookies[NAMES.COOKIE.DEVICE_ID]
       ? (req.cookies[NAMES.COOKIE.DEVICE_ID] as string)
