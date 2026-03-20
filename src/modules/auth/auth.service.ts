@@ -20,7 +20,6 @@ import {
   USessionResponse,
   UTokenResponse,
 } from 'src/models/dto/auth.dto';
-import crypto from 'node:crypto';
 import { OtpService } from '../otp/otp.service';
 
 @Injectable()
@@ -297,6 +296,7 @@ export class AuthV2Service {
           ownerName: record.name,
           ownerEmail: record.email,
           verified: record.verified,
+          sessionActivated: false,
           otpRequired: record.otpRequired,
           otpGenerated: false,
           otpVerificationKey: verificationToken,
@@ -372,6 +372,7 @@ export class AuthV2Service {
         ownerName: record.name,
         ownerEmail: record.email,
         verified: record.verified,
+        sessionActivated: state === SessionState.ACTIVE,
         otpRequired: record.otpRequired,
         otpGenerated: false,
         otpVerificationKey,
@@ -411,6 +412,7 @@ export class AuthV2Service {
       ownerName: me.name,
       ownerEmail: me.email,
       verified: me.verified,
+      sessionActivated: true,
       otpRequired: me.otpRequired,
       otpGenerated: false,
       otpVerificationKey: null,

@@ -11,7 +11,6 @@ import { getRandomBase64Url, getRandomHex } from 'src/common/utils/random';
 import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import {
   AddPhoneNumberDto,
-  CreateOwnerResponse,
   CreateShopDto,
   DeletePhoneNumberDto,
   PhoneNumberResponse,
@@ -107,6 +106,7 @@ export class ShopService {
       ownerName: owner.name,
       ownerEmail: owner.email,
       verified: owner.verified,
+      sessionActivated: false,
       otpRequired: owner.otpRequired,
       otpGenerated: false,
       otpVerificationKey: verificationToken,
@@ -206,6 +206,7 @@ export class ShopService {
         ownerName: owner.name,
         ownerEmail: owner.email,
         verified: owner.verified,
+        sessionActivated: true,
         otpRequired: owner.otpRequired,
         otpGenerated: false,
         otpVerificationKey: null,

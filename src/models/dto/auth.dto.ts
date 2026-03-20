@@ -21,6 +21,7 @@ export class USessionResponse {
   ownerName: string;
   ownerEmail: string;
   verified: boolean;
+  sessionActivated: boolean;
   otpRequired: boolean;
   otpGenerated: boolean | null;
   otpVerificationKey: string | null;
