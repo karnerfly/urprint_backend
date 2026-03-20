@@ -86,3 +86,9 @@ export class VerifyOtpResponse {
   ackExpireAt: Date | null;
   expireAt: Date;
 }
+
+export class VerifyAndActivateSessionResponse {
+  status: string;
+  activated: boolean;
+  ownerId: string;
+}

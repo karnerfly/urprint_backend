@@ -25,7 +25,6 @@ import { Snowflake } from 'src/common/snowflake/snowflake.util';
 import {
   JWTPayload,
   SessionState,
-  USessionResponse,
   UTokenResponse,
 } from 'src/models/dto/auth.dto';
 import { TaskService } from 'src/common/task/task.service';

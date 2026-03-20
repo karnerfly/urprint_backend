@@ -38,11 +38,11 @@ export class SessionService implements OnModuleInit {
     try {
       const session = decryptSessionPayload(sessionString, secret);
 
-      if (
-        session.state == SessionState.BLOCKED ||
-        session.state == SessionState.DEACTIVE
-      )
-        return null;
+      // if (
+      //   session.state == SessionState.BLOCKED ||
+      //   session.state == SessionState.DEACTIVE
+      // )
+      //   return null;
 
       return session;
     } catch (error) {

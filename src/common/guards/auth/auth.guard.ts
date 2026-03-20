@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request, Response } from 'express';
 import { type AppConfig, CONFIG_NAME } from 'src/common/config';
-import { JWTPayload, Session } from 'src/models/dto/auth.dto';
+import { JWTPayload, Session, SessionState } from 'src/models/dto/auth.dto';
 
 export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
@@ -74,7 +74,11 @@ export class AuthSessionGuard implements CanActivate {
 
     const session = response.locals['session'] as Session | undefined;
 
-    if (!session) {
+    if (
+      !session ||
+      session.state == SessionState.BLOCKED ||
+      session.state == SessionState.DEACTIVE
+    ) {
       throw new UnauthorizedException();
     }
 

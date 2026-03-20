@@ -14,6 +14,7 @@ import {
   GenerateOtpResponse,
   ResendOtpDto,
   ResendOtpResponse,
+  VerifyAndActivateSessionResponse,
   VerifyOtpDto,
   VerifyOtpResponse,
 } from 'src/models/dto/otp.dto';
@@ -71,14 +72,14 @@ export class OtpController {
     @Body() dto: VerifyOtpDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ status: string; activated: boolean; ownerId: string }> {
+  ): Promise<VerifyAndActivateSessionResponse> {
     const sessionId =
       (req.cookies[NAMES.COOKIE.AUTH_SESSION] as string) || undefined;
     const sessionSecret =
       (req.cookies[NAMES.COOKIE.AUTH_SESSION_SECRET] as string) || undefined;
 
     if (!sessionId || !sessionSecret) {
-      throw new ForbiddenException('Invalid request');
+      throw new ForbiddenException('No active session found');
     }
 
     const updated = await this.otpService.verifyAndActivateSession(
